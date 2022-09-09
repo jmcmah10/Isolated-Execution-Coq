@@ -1,0 +1,5 @@
+- Appendix D: "where auxiliary function w ⊏ T is a predicate that holds when"
+issue: "⊏ should be ≺"
+
+- Appendix D: "If e ⊏ T and T ∈ ran(R), then e ∈ dom(V ) ∪ {⊥}"
+issue: "⊏ is not defined anywhere, I'm not certain what it should be"
