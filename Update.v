@@ -27,37 +27,32 @@ Fixpoint contains_way_id (w : way_ID) (T : PLRU_tree) : bool :=
 Definition common_enclave (T1 : PLRU_tree) (T2 : PLRU_tree) : enclave_ID :=
   match T1, T2 with
   | subtree _ e _ _, subtree _ e' _ _ =>
-    match equal_enclave_IDs e e' with
-    | true => e
-    | false => enclave_ID_inactive
-    end
+    if equal_enclave_IDs e e'
+    then e
+    else enclave_ID_inactive
   | _, _ => enclave_ID_inactive
   end.
 
 Fixpoint update (T : PLRU_tree) (w : way_ID) (e: enclave_ID) : PLRU_tree :=
   match T with
   | subtree select_bit e0 T1 T2 =>
-    match equal_enclave_IDs e e0 with
-    | true =>
-      match (contains_way_id w T1) with
-      | true => subtree LMRU e (update T1 w e) T2
-      | false =>
-        match (contains_way_id w T2) with
-        | true => subtree RMRU e T1 (update T2 w e)
-        | false => subtree select_bit e T1 T2
-        end
-      end
-    | false => subtree select_bit (common_enclave T1 T2) (update T1 w e) (update T2 w e)
-    end
+    if equal_enclave_IDs e e0
+    then
+      if (contains_way_id w T1) 
+      then subtree LMRU e (update T1 w e) T2
+      else
+        if (contains_way_id w T2)
+        then subtree RMRU e T1 (update T2 w e)
+        else subtree select_bit e T1 T2
+    else subtree select_bit (common_enclave T1 T2) (update T1 w e) (update T2 w e)
   | subtree_leaf L =>
     match L with
     | leaf w' e' =>
       match e' with
       | enclave_ID_inactive =>
-        match eq_nat w w' with
-        | true => subtree_leaf (leaf w e)
-        | false => subtree_leaf L
-        end
+        if (eq_nat w w')
+        then subtree_leaf (leaf w e)
+        else subtree_leaf L
       | enclave_ID_active _ => subtree_leaf L
       end
     end
