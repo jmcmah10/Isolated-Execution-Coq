@@ -18,7 +18,7 @@ Definition nullify_cachelet_index_list (l: (list cachelet_index)): (list nullabl
   map (nullify_cachelet_index) l.
 Definition cachelet_min_way_ID (l: (list cachelet_index)): nullable_cachelet_index :=
   fold_right lt_way_ID cachelet_index_none (nullify_cachelet_index_list l).
-Definition way_first_allocation (F: CAT) : nullable_cachelet_index := cachelet_min_way_ID F.
+Definition way_first_allocation (F: CAT): nullable_cachelet_index := cachelet_min_way_ID F.
 
 (*
 Compute (way_first_allocation (cons (cachelet_index_value 2 0) nil)).
@@ -59,7 +59,8 @@ Compute cachelet_invalidation ((cons (wsc_mapping (cachelet_index_value 0 1) (va
 (* Cachelet Deallocation *)
 
 (* CC Hit Read *)
-
+Definition cc_hit_read (psi: single_level_cache_unit) (state: enclave_state) (l: memory_address): single_level_cache_unit :=
+  
 
 (* CC Hit Write *)
 
