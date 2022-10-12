@@ -13,16 +13,33 @@ Inductive validatable_enclave_state :=
   | enclave_state_valid: enclave_state -> validatable_enclave_state
   | enclave_state_error: validatable_enclave_state.
 
-(*
-(* Enclave Creation *)
-Definition enclave_creation (state: enclave_state) (mu: memory) (e: raw_enclave_ID) (l: memory_address) (n: data): validatable_enclave_state :=
-  match state with
-  | enclave_state_value _ mem_range =>
-    if andb (negb (contains_enclave mem_range e)) (memory_currently_unallocated l n)
-    then enclave_state_error
-    else enclave_state_error
+Definition data_equality (x: data) (y: data) :=
+  match x, y with
+  | data_value x1, data_value y1 => x1 =? y1
+  | _, _ => false
   end.
-*)
+
+(* Enclave Creation *)
+Definition add_new_enclave_to_enclave_state (state: enclave_state) (e: raw_enclave_ID) (l: memory_address) (n: data) : validatable_enclave_state :=
+  match state with
+  | enclave_state_value x mem_range =>
+    match (NatMap.find e mem_range) with
+    | Some _ => enclave_state_error
+    | None => enclave_state_valid (enclave_state_value x (NatMap.add e (enclave_address_and_data l n) mem_range))
+    end
+  end.
+Definition enclave_creation (state: enclave_state) (mu: memory) (e: raw_enclave_ID) (l: memory_address) (n: data): validatable_enclave_state :=
+  match l with
+  | address block offset =>
+    match (NatMap.find block mu) with
+    | Some x =>
+      match (NatMapProperties.for_all (fun _ v => data_equality v (data_value 0)) x) with
+      | true => add_new_enclave_to_enclave_state state e l n
+      | false => enclave_state_error
+      end
+    | None => enclave_state_error
+    end
+  end.
 
 (* Active Enclave Update *)
 Definition active_enclave_update (state: enclave_state) (id: enclave_ID): validatable_enclave_state :=
@@ -30,9 +47,9 @@ Definition active_enclave_update (state: enclave_state) (id: enclave_ID): valida
   | enclave_state_value e mem_range =>
     match id with
     | enclave_ID_active x =>
-      match (contains_enclave mem_range x) with
-      | true => enclave_state_valid (enclave_state_value id mem_range)
-      | false => enclave_state_error
+      match (NatMap.find x mem_range) with
+      | Some _ => enclave_state_valid (enclave_state_value id mem_range)
+      | None => enclave_state_error
       end
     | enclave_ID_inactive => enclave_state_valid (enclave_state_value enclave_ID_inactive mem_range)
     end
@@ -43,16 +60,3 @@ Definition enclave_elimination (state: enclave_state) (id: raw_enclave_ID): encl
   match state with
   | enclave_state_value e memory_range => enclave_state_value e (NatMap.remove id memory_range)
   end.
-
-(*
-Compute (enclave_elimination (enclave_state_value (enclave_ID_inactive) 
-  (NatMap.add 1 (enclave_address_and_data (address 0 0) data_none) (NatMap.empty enclave_memory_range_value))) (1)).
-Compute (enclave_elimination (enclave_state_value (enclave_ID_inactive) 
-  (NatMap.add 2 (enclave_address_and_data (address 0 0) data_none) 
-  (NatMap.add 3 (enclave_address_and_data (address 0 0) data_none) 
-  (NatMap.add 4 (enclave_address_and_data (address 0 0) data_none) (NatMap.empty enclave_memory_range_value))))) (1)).
-Compute (enclave_elimination (enclave_state_value (enclave_ID_inactive) 
-  (NatMap.add 2 (enclave_address_and_data (address 0 0) data_none) 
-  (NatMap.add 3 (enclave_address_and_data (address 0 0) data_none) 
-  (NatMap.add 4 (enclave_address_and_data (address 0 0) data_none) (NatMap.empty enclave_memory_range_value))))) (4)).
-*)

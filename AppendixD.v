@@ -1,5 +1,6 @@
 Require Import RuntimeDefinitions.
 From Coq Require Import Bool.Bool.
+From Coq Require Import Init.Nat.
 
 Fixpoint eq_nat (n : nat) (m : nat) : bool :=
   match n, m with
