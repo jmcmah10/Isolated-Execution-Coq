@@ -42,7 +42,7 @@ Inductive memory_value : Type :=
 
 (* Enclave-Related Structures *)
 Inductive enclave_memory_range_value :=
-| enclave_address_and_data : memory_address -> data -> enclave_memory_range_value.
+| enclave_address_and_data : memory_address -> number -> enclave_memory_range_value.
 Inductive enclave_ID : Type :=
 | enclave_ID_active : raw_enclave_ID -> enclave_ID
 | enclave_ID_inactive : enclave_ID.
