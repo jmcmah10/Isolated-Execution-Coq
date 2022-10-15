@@ -2,17 +2,9 @@ Require Import RuntimeDefinitions.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Init.Nat.
 
-Fixpoint eq_nat (n : nat) (m : nat) : bool :=
-  match n, m with
-  | 0, 0 => true
-  | 0, S _ => false
-  | S _, 0 => false
-  | S n1, S m1 => eq_nat n1 m1
-  end.
-
 Definition equal_enclave_IDs (e0 : enclave_ID) (e1 : enclave_ID) : bool :=
   match e0, e1 with
-  | enclave_ID_active e0_val, enclave_ID_active e1_val => eq_nat e0_val e1_val
+  | enclave_ID_active e0_val, enclave_ID_active e1_val => eqb e0_val e1_val
   | _, _ => false
   end.
 
@@ -21,7 +13,7 @@ Fixpoint contains_way_id (w : way_ID) (T : PLRU_tree) : bool :=
   | subtree sigma e T1 T2 => (contains_way_id w T1) || (contains_way_id w T2)
   | subtree_leaf L => 
     match L with
-    | leaf w' e => eq_nat w w'
+    | leaf w' e => eqb w w'
     end
   end.
 
@@ -51,7 +43,7 @@ Fixpoint update (T : PLRU_tree) (w : way_ID) (e: enclave_ID) : PLRU_tree :=
     | leaf w' e' =>
       match e' with
       | enclave_ID_inactive =>
-        if (eq_nat w w')
+        if (eqb w w')
         then subtree_leaf (leaf w e)
         else subtree_leaf L
       | enclave_ID_active _ => subtree_leaf L

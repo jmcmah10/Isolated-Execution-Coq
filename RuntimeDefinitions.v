@@ -12,7 +12,10 @@ Require Import Lia.
 Module Import NatMap := FMapList.Make(Nat_as_OT).
 Module OrderedPair := PairOrderedType Nat_as_OT Nat_as_OT.
 Module Import PairMap := FMapList.Make(OrderedPair).
+Module Import CacheletMap := PairMap.
 Module NatMapProperties := WProperties_fun Nat_as_OT NatMap.
+Module PairMapProperties := WProperties_fun OrderedPair PairMap.
+Module CacheletMapProperties := PairMapProperties.
 
 (* Identifiers and Atomic Values *)
 Definition core_ID := nat.
