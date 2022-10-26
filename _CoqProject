@@ -1,5 +1,6 @@
 -R . project
 ./RuntimeDefinitions.v
+./AppendixF.v
 ./AppendixC.v
 ./AppendixD.v
 ./AppendixE.v

@@ -2,12 +2,9 @@ From Coq Require Import Lists.List.
 From Coq Require Import FSets.FMapList.
 From Coq Require Import FSets.FMapFacts.
 From Coq Require Import Structures.OrderedTypeEx.
-From Coq Require Import Structures.OrderedType.
 From Coq Require Import Init.Nat.
-From Coq Require Import Arith.Compare.
 From Coq Require Import Bool.Bool.
-From Coq Require Import Arith.PeanoNat.
-Require Import Lia.
+From Coq Require Import Logic.Eqdep_dec.
 
 Module Import NatMap := FMapList.Make(Nat_as_OT).
 Module OrderedPair := PairOrderedType Nat_as_OT Nat_as_OT.
@@ -16,6 +13,7 @@ Module Import CacheletMap := PairMap.
 Module NatMapProperties := WProperties_fun Nat_as_OT NatMap.
 Module PairMapProperties := WProperties_fun OrderedPair PairMap.
 Module CacheletMapProperties := PairMapProperties.
+
 
 (* Identifiers and Atomic Values *)
 Definition core_ID := nat.
@@ -100,3 +98,23 @@ Definition registers := NatMap.t memory_value.
 Definition memory := NatMap.t data_block.
 Inductive runtime_state : Type :=
 | runtime_state_value : multi_level_cache -> memory -> registers -> processes -> runtime_state.
+
+
+(* Other *)
+(* Cachelet Index Equality *)
+Definition eq_cachelet_index (c1: cachelet_index) (c2: cachelet_index): bool :=
+  match c1, c2 with
+  | (w1, s1), (w2, s2) => andb (Nat.eqb w1 w2) (Nat.eqb s1 s2)
+  end.
+
+(* Remove From CAT *)
+Fixpoint recursive_remove_from_CAT (c: cachelet_index) (F: CAT): CAT :=
+  match F with
+  | nil => nil
+  | c' :: F' =>
+    match eq_cachelet_index c c' with
+    | true => F'
+    | false => c' :: recursive_remove_from_CAT c F'
+    end
+  end.
+Definition remove_CAT (c: cachelet_index) (F: CAT): CAT := recursive_remove_from_CAT c F.
