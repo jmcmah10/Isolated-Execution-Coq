@@ -101,6 +101,15 @@ Inductive runtime_state : Type :=
 
 
 (* Other *)
+(* Observation Trace *)
+Inductive access_mode : Type :=
+| hit_read: access_mode
+| hit_write: access_mode
+| miss: access_mode.
+Inductive observation : Type :=
+| observation_tuple: access_mode -> cachelet_index -> physical_cache_unit_ID -> observation.
+Definition observation_trace := list observation.
+
 (* Cachelet Index Equality *)
 Definition eq_cachelet_index (c1: cachelet_index) (c2: cachelet_index): bool :=
   match c1, c2 with
