@@ -27,7 +27,14 @@ Definition data_offset := nat.
 Definition cache_tag_value := nat.
 Inductive memory_address :=
 | address : block_ID -> data_offset -> memory_address.
-Definition instruction := nat.
+Inductive instruction : Type :=
+| create: register_ID -> register_ID -> register_ID -> (list register_ID) -> instruction
+| enter: register_ID -> instruction
+| exit: instruction
+| destroy: register_ID -> instruction
+| load: memory_address -> register_ID -> instruction
+| store: register_ID -> memory_address -> instruction
+| br: register_ID -> register_ID -> instruction.
 Definition number := nat.
 Definition process_ID := nat.
 
@@ -62,7 +69,7 @@ Inductive nullable_cachelet_index : Type :=
 | cachelet_index_defined : cachelet_index -> nullable_cachelet_index
 | cachelet_index_none : nullable_cachelet_index.
 
-Definition data_block := NatMap.t data.
+Definition data_block := NatMap.t memory_value.
 Definition remapping_list := NatMap.t way_mask.
 (* Extra structure to hold data in way_set_cache *)
 Inductive way_set_cache_value : Type :=
@@ -100,6 +107,8 @@ Inductive runtime_state : Type :=
 | runtime_state_value : multi_level_cache -> memory -> registers -> processes -> runtime_state.
 
 
+
+
 (* Other *)
 (* Observation Trace *)
 Inductive access_mode : Type :=
@@ -109,6 +118,11 @@ Inductive access_mode : Type :=
 Inductive observation : Type :=
 | observation_tuple: access_mode -> cachelet_index -> physical_cache_unit_ID -> observation.
 Definition observation_trace := list observation.
+Inductive process_explicit_observation : Type :=
+| process_and_observation: process_ID -> observation -> process_explicit_observation.
+Definition process_explicit_observation_trace := list process_explicit_observation.
+Definition to_process_observation (p: process_ID) (obs: observation): process_explicit_observation := process_and_observation p obs.
+Definition to_p_trace (p: process_ID) (obs: observation_trace) := List.map (to_process_observation p) obs.
 
 (* Cachelet Index Equality *)
 Definition eq_cachelet_index (c1: cachelet_index) (c2: cachelet_index): bool :=
@@ -127,3 +141,63 @@ Fixpoint recursive_remove_from_CAT (c: cachelet_index) (F: CAT): CAT :=
     end
   end.
 Definition remove_CAT (c: cachelet_index) (F: CAT): CAT := recursive_remove_from_CAT c F.
+
+(* Register List to Values *)
+Fixpoint recursive_read_register_list (rho: registers) (r_bar: (list register_ID)): (list nat) :=
+  match r_bar with
+  | nil => nil
+  | r :: rs =>
+    match (NatMap.find r rho) with
+    | None => nil
+    | Some r_val =>
+      match r_val with
+      | memory_value_instruction _ => nil
+      | memory_value_data d =>
+        match d with
+        | data_none => nil
+        | data_value x => x :: (recursive_read_register_list rho rs)
+        end
+      end
+    end
+  end.
+Fixpoint check_valid_register_list (rho: registers) (r_bar: (list register_ID)): bool :=
+  match r_bar with
+  | nil => true
+  | r :: rs =>
+    match (NatMap.find r rho) with
+    | None => false
+    | Some r_val =>
+      match r_val with
+      | memory_value_instruction _ => false
+      | memory_value_data d =>
+        match d with
+        | data_none => false
+        | data_value x => check_valid_register_list rho rs
+        end
+      end
+    end
+  end.
+Definition read_register_list (rho: registers) (r_bar: (list register_ID)): option (list nat) :=
+  match (check_valid_register_list rho r_bar) with
+  | false => None
+  | true => Some (recursive_read_register_list rho r_bar)
+  end.
+
+(* Number to Memory Address *)
+Definition num_to_addr (n: nat) (block_size: nat): memory_address :=
+  address (shiftr n (log2 block_size)) (n mod block_size).
+Definition number_to_memory_address (mu: memory) (n: nat): option memory_address :=
+  match (NatMapProperties.to_list mu) with
+  | nil => None
+  | (_, l) :: _ => Some (num_to_addr n (length (NatMapProperties.to_list l)))
+  end.
+
+(* Directly Read from Memory *)
+Definition memory_read (mu: memory) (l: memory_address): option memory_value :=
+  match l with
+  | address b delta =>
+    match (NatMap.find b mu) with
+    | None => None
+    | Some D => NatMap.find delta D
+    end
+  end.

@@ -29,16 +29,20 @@ Fixpoint is_all_zeroes (mu: memory) (block: block_ID) (offset: data_offset) (blo
     | Some l =>
       match (NatMap.find offset l) with
       | None => false
-      | Some d =>
-        match d with
-        | data_none => false
-        | data_value v =>
-          match v with
-          | S _ => false
-          | 0 =>
-            match ((S offset) =? block_size) with
-            | true => is_all_zeroes mu (S block) 0 block_size new_size
-            | false => is_all_zeroes mu block (S offset) block_size new_size
+      | Some x =>
+        match x with
+        | memory_value_instruction _ => false
+        | memory_value_data d =>
+          match d with
+          | data_none => false
+          | data_value v =>
+            match v with
+            | S _ => false
+            | 0 =>
+              match ((S offset) =? block_size) with
+              | true => is_all_zeroes mu (S block) 0 block_size new_size
+              | false => is_all_zeroes mu block (S offset) block_size new_size
+              end
             end
           end
         end

@@ -9,8 +9,8 @@ Fixpoint set_all_zeroes (mu: memory) (block: block_ID) (offset: data_offset) (bl
     | None => None
     | Some l =>
       match ((S offset) =? block_size) with
-      | true => set_all_zeroes (NatMap.add block (NatMap.add offset (data_value 0) l) mu) (S block) 0 block_size new_size
-      | false => set_all_zeroes (NatMap.add block (NatMap.add offset (data_value 0) l) mu) block (S offset) block_size new_size
+      | true => set_all_zeroes (NatMap.add block (NatMap.add offset (memory_value_data (data_value 0)) l) mu) (S block) 0 block_size new_size
+      | false => set_all_zeroes (NatMap.add block (NatMap.add offset (memory_value_data (data_value 0)) l) mu) block (S offset) block_size new_size
       end
     end
   end.

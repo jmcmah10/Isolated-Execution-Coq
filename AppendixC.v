@@ -138,7 +138,7 @@ Definition cc_hit_write (psi: single_level_cache_unit) (state: enclave_state) (l
         | memory_value_instruction _ => cc_hit_write_error
         | memory_value_data n =>
           match state with
-          | enclave_state_value e _ => cc_hit_write_valid D (w, s) (single_level_cache F V (CacheletMap.add (w, s) (valid_bit_tag_and_data dirty_bit t (NatMap.add delta n D)) C) (NatMap.add s (update T' w e) R))
+          | enclave_state_value e _ => cc_hit_write_valid D (w, s) (single_level_cache F V (CacheletMap.add (w, s) (valid_bit_tag_and_data dirty_bit t (NatMap.add delta (memory_value_data n) D)) C) (NatMap.add s (update T' w e) R))
           end
         end
       end
