@@ -78,11 +78,12 @@ Notation "'<<' k ',' m ',' r ',' p '|' obs '>>'" := (state_and_trace (runtime_st
 (* Multi-process Operational Semantics *)
 Reserved Notation "c1 '==>' c2" (at level 40).
 Inductive multi_sem : semantic_state -> semantic_state -> Prop :=
-| Multi: forall k mu rho pi e i obs_p obs q n k' mu' rho' e' l p,
+| Multi: forall k mu rho pi e i obs_p obs q n k' mu' rho' e' l l' p,
     memory_read mu l = Some (memory_value_instruction i) ->
     <<k, mu, rho, e | i, q>> --> <<k', mu', rho', e' | obs, q, n>> ->
     (NatMap.find p pi) = Some (process_value e l q) ->
-    <<k, mu, rho, pi | obs_p>> ==> <<k', mu', rho', (NatMap.add p (process_value e' l q) pi) | (obs_p ++ (to_p_trace p obs)) >>
+    add_to_program_counter mu l n = Some l' ->
+    <<k, mu, rho, pi | obs_p>> ==> <<k', mu', rho', (NatMap.add p (process_value e' l' q) pi) | (obs_p ++ (to_p_trace p obs)) >>
 | ContextSwitch : forall sigma k mu rho pi q q' p e l obs,
     sigma = <<k, mu, rho, pi | obs>> ->
     (NatMap.find p pi) = Some (process_value e l q) ->

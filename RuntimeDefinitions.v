@@ -189,8 +189,26 @@ Definition num_to_addr (n: nat) (block_size: nat): memory_address :=
 Definition number_to_memory_address (mu: memory) (n: nat): option memory_address :=
   match (NatMapProperties.to_list mu) with
   | nil => None
-  | (_, l) :: _ => Some (num_to_addr n (length (NatMapProperties.to_list l)))
+  | (_, x) :: _ => Some (num_to_addr n (length (NatMapProperties.to_list x)))
   end.
+Definition addr_to_num (l: memory_address) (block_size: nat): nat :=
+  match l with
+  | address b delta => ((b * block_size) + delta)
+  end.
+Definition memory_address_to_number (mu: memory) (l: memory_address): option nat :=
+  match (NatMapProperties.to_list mu) with
+  | nil => None
+  | (_, x) :: _ => Some (addr_to_num l (length (NatMapProperties.to_list x)))
+  end.
+Definition pc_add (pc: memory_address) (n: nat) (block_size: nat): memory_address :=
+  num_to_addr ((addr_to_num pc block_size) + n) block_size.
+Definition add_to_program_counter (mu: memory) (pc: memory_address) (n: nat): option memory_address :=
+  match (NatMapProperties.to_list mu) with
+  | nil => None
+  | (_, x) :: _ => Some (pc_add pc n (length (NatMapProperties.to_list x)))
+  end.
+
+Compute (pc_add (address 1 31) 33 32).
 
 (* Directly Read from Memory *)
 Definition memory_read (mu: memory) (l: memory_address): option memory_value :=

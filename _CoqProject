@@ -5,3 +5,4 @@
 ./AppendixD.v
 ./AppendixC.v
 ./MLCOperations.v
+./Semantics.v
