@@ -14,6 +14,16 @@ Module NatMapProperties := WProperties_fun Nat_as_OT NatMap.
 Module PairMapProperties := WProperties_fun OrderedPair PairMap.
 Module CacheletMapProperties := PairMapProperties.
 
+Lemma test : forall x a b, (length (NatMapProperties.to_list x)) = a ->
+  (length (NatMapProperties.to_list (NatMap.add 0 0 x))) = b -> (a = b \/ (S a) = b).
+Proof.
+  intros.
+  induction x using NatMapProperties.map_induction.
+  - right. rewrite <- H. rewrite <- H0.
+    unfold NatMapProperties.to_list.
+    unfold NatMap.elements.
+    simpl. auto.
+
 
 (* Identifiers and Atomic Values *)
 Definition core_ID := nat.
@@ -202,13 +212,11 @@ Definition memory_address_to_number (mu: memory) (l: memory_address): option nat
   end.
 Definition pc_add (pc: memory_address) (n: nat) (block_size: nat): memory_address :=
   num_to_addr ((addr_to_num pc block_size) + n) block_size.
-Definition add_to_program_counter (mu: memory) (pc: memory_address) (n: nat): option memory_address :=
+Definition add_to_memory_address (mu: memory) (pc: memory_address) (n: nat): option memory_address :=
   match (NatMapProperties.to_list mu) with
   | nil => None
   | (_, x) :: _ => Some (pc_add pc n (length (NatMapProperties.to_list x)))
   end.
-
-Compute (pc_add (address 1 31) 33 32).
 
 (* Directly Read from Memory *)
 Definition memory_read (mu: memory) (l: memory_address): option memory_value :=

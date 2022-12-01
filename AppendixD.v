@@ -2,10 +2,16 @@ Require Import RuntimeDefinitions.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Init.Nat.
 
+(* Enclave ID Equality *)
 Definition equal_enclave_IDs (e0 : enclave_ID) (e1 : enclave_ID): bool :=
   match e0, e1 with
   | enclave_ID_active e0_val, enclave_ID_active e1_val => eqb e0_val e1_val
   | _, _ => false
+  end.
+Definition equal_enclave_IDs_prop (e0 : enclave_ID) (e1 : enclave_ID): Prop :=
+  match e0, e1 with
+  | enclave_ID_active e0_val, enclave_ID_active e1_val => eq e0_val e1_val
+  | _, _ => False
   end.
 
 
@@ -19,6 +25,18 @@ Fixpoint recursive_contains_way_ID (w : way_ID) (T : PLRU_tree): bool :=
     end
   end.
 Definition contains_way_ID (w: way_ID) (T: PLRU_tree): bool := recursive_contains_way_ID w T.
+
+(* Contains Way ID (Prop) *)
+Fixpoint recursive_contains_way_ID_prop (w : way_ID) (T : PLRU_tree): Prop :=
+  match T with
+  | subtree sigma e T1 T2 => (recursive_contains_way_ID_prop w T1) \/ (recursive_contains_way_ID_prop w T2)
+  | subtree_leaf L => 
+    match L with
+    | leaf w' e => eq w w'
+    end
+  end.
+Definition contains_way_ID_prop (w: way_ID) (T: PLRU_tree): Prop := recursive_contains_way_ID_prop w T.
+
 
 
 (* Common Enclave *)
@@ -67,6 +85,14 @@ Fixpoint contains_enclave (e: enclave_ID) (T: PLRU_tree): bool :=
   | subtree_leaf L =>
     match L with
     | leaf _ e0 => equal_enclave_IDs e e0
+    end
+  end.
+Fixpoint contains_enclave_prop (e: enclave_ID) (T: PLRU_tree): Prop :=
+  match T with
+  | subtree _ e0 T1 T2 => (equal_enclave_IDs_prop e e0) \/ (contains_enclave_prop e T1) \/ (contains_enclave_prop e T1)
+  | subtree_leaf L =>
+    match L with
+    | leaf _ e0 => equal_enclave_IDs_prop e e0
     end
   end.
 
