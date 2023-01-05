@@ -78,7 +78,6 @@ Proof.
     destruct e. destruct (NatMap.find lambda0 m). destruct (cachelet_allocation a r4 s).
     destruct (get_cache_hierarchy_parent (cache_node lambda0) H18).
     destruct c0. subst.
-    apply (wf1 (runtime_state_value m1 m2 r0 (NatMap.add p1 (process_value e' l' q) p))).
     
     give_up.
     discriminate.
