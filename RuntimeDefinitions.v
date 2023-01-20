@@ -14,16 +14,6 @@ Module NatMapProperties := WProperties_fun Nat_as_OT NatMap.
 Module PairMapProperties := WProperties_fun OrderedPair PairMap.
 Module CacheletMapProperties := PairMapProperties.
 
-Lemma test : forall x a b, (length (NatMapProperties.to_list x)) = a ->
-  (length (NatMapProperties.to_list (NatMap.add 0 0 x))) = b -> (a = b \/ (S a) = b).
-Proof.
-  intros.
-  induction x using NatMapProperties.map_induction.
-  - right. rewrite <- H. rewrite <- H0.
-    unfold NatMapProperties.to_list.
-    unfold NatMap.elements.
-    simpl. auto.
-
 
 (* Identifiers and Atomic Values *)
 Definition core_ID := nat.

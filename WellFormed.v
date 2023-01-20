@@ -1,6 +1,10 @@
 From Coq Require Import Lists.List.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Lia.
+From Coq Require Import FSets.FMapList.
+From Coq Require Import FSets.FMapFacts.
+From Coq Require Import Init.Nat.
+From Coq Require Import Structures.OrderedTypeEx.
 Require Import RuntimeDefinitions.
 Require Import AppendixD.
 Require Import AppendixC.
@@ -8,6 +12,8 @@ Require Import AppendixF.
 Require Import AppendixE.
 Require Import Semantics.
 Require Import MLCOperations.
+
+Module NatMapFacts := NatMapProperties.F.
 
 Definition tree_in_PLRU (R: set_indexed_PLRU) T: Prop :=
   exists x, (NatMap.find x R = Some T).
@@ -33,11 +39,77 @@ Definition wf1 (sigma: runtime_state): Prop :=
   end.
 *)
 
+Lemma cmp_to_eq : forall x y, (x =? y) = true -> x = y.
+Proof.
+  intro x.
+  induction x.
+  intros y H.
+  destruct y. reflexivity. simpl in *. congruence.
+  intros y H. destruct y.
+  simpl in *. congruence. f_equal ; auto.
+Qed.
+
+Lemma cmp_uneq_helper1 : forall n m : nat,
+    n <> m -> S n <> S m.
+Proof.
+  unfold not; intros.
+  apply H. injection H0. intro. assumption.
+Qed.
+Lemma cmp_uneq_helper2 : forall n m : nat,
+    S n <> S m -> n <> m.
+Proof.
+  unfold not; intros.
+  apply H. lia.
+Qed.
+Lemma cmp_to_uneq : forall x y, (x =? y) = false <-> x <> y.
+Proof.
+  induction x. split.
+  simpl. destruct y. discriminate. discriminate.
+  simpl. destruct y. intros. contradiction. intros. reflexivity.
+  simpl. destruct y.
+  split. intros. discriminate. intros. reflexivity.
+  split. intros. apply IHx in H. apply cmp_uneq_helper1. exact H.
+  intros. apply cmp_uneq_helper2 in H. apply IHx in H. exact H.
+Qed.
+
+Definition wf_h_tree (sigma: runtime_state): Prop :=
+  forall k mu rho pi lambda F V C R h_tree,
+  (sigma = runtime_state_value k mu rho pi) ->
+  (NatMap.MapsTo lambda (single_level_cache F V C R) k) ->
+  (forall q cn, q = cache_node cn -> In q h_tree -> NatMap.In cn k).
+
+Lemma wf_h_tree_preservation : forall sigma obs sigma' obs',
+  wf_h_tree sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf_h_tree sigma'.
+Proof.
+  destruct sigma; destruct sigma'.
+  unfold wf_h_tree in *.
+  intros.
+  inversion H0.
+  inversion H16.
+  - subst.
+    unfold mlc_read in *. unfold recursive_mlc_read in *.
+Admitted.
+
 Definition wf1 (sigma: runtime_state): Prop :=
   forall k mu rho pi lambda c F V C R,
   (sigma = runtime_state_value k mu rho pi) ->
+  (NatMap.MapsTo lambda (single_level_cache F V C R) k) ->
+  (In c F) -> (CacheletMap.In c C).
+
+(*
+Definition wf1_other (sigma: runtime_state): Prop :=
+  forall k mu rho pi lambda c F V C R,
+  (sigma = runtime_state_value k mu rho pi) ->
   (NatMap.find lambda k) = Some (single_level_cache F V C R) ->
-  (In c F) -> (CacheletMap.find c C <> None).
+  (In c F) -> (CacheletMap.In c C).
+*)
+
+(*
+Lemma mlc_allocation_add : forall n e k lambda h_tree k0 k1 x y,
+  (recursive_mlc_allocation n e k lambda h_tree) = Some k0 ->
+  (recursive_mlc_allocation n e (NatMap.add x y k) lambda h_tree) = Some k1 ->
+  (NatMap.add x y k0 = k1)
+*)
 
 Lemma wf1_preservation : forall sigma obs sigma' obs',
   wf1 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf1 sigma'.
@@ -50,36 +122,61 @@ Proof.
   - unfold mlc_read in H33; unfold recursive_mlc_read in H33.
     destruct (get_hierarchy_tree_height H18).
     discriminate.
-    destruct n0.
-    destruct lambda0.
-    destruct (NatMap.find p2 m).
-    destruct (cc_hit_read s e' l0).
+    case_eq lambda0; intros; subst.
+    case_eq (NatMap.find p2 m); intros; destruct (NatMap.find p2 m) in H33.
+    case_eq (cc_hit_read s0 e' l0); intros; destruct (cc_hit_read s0 e' l0) in H33.
+    unfold cc_hit_read in H5.
+    unfold cc_unfold in H5.
+    destruct s0; destruct l0.
+    unfold block_to_set_and_tag in H5. subst.
+
+
+
+
+    case_eq n0.
+    case_eq lambda0.
+    case_eq (NatMap.find p2 m).
+    case_eq (cc_hit_read s e' l0).
     injection H33. injection H1. intros.
     destruct s0. subst.
+    case_eq (Nat.eqb p1 p2). intros.
+    apply cmp_to_eq in H4. subst.
+    apply (NatMapFacts.add_mapsto_iff m p2 lambda (single_level_cache c1 v w s0) (single_level_cache F V C R)) in H2.
+    destruct H2. destruct H2. injection H4. intros. subst.
+    case_eq (OrderedPair.eqb 
+    case_eq (Nat.eqb lambda p2). intros.
+    apply cmp_to_eq in H4. subst.
+    destruct H2. injection H4. intros. subst.
+    give_up.
+    intros. apply cmp_to_uneq in H4.
+    give_up.
+    
+    give_up.
+    intros. apply cmp_to_uneq in H4.
+    
     give_up.
     destruct (get_cache_hierarchy_parent (cache_node p2) H18).
     discriminate.
     discriminate.
     discriminate.
     destruct l0.
-    destruct (NatMap.find b m2).
+    destruct (NatMap.find b m2). subst.
     give_up.
     discriminate.
-    destruct lambda0.
+    destruct lambda0. subst.
     give_up.
     give_up.
   - unfold mlc_allocation in H39; destruct e; unfold recursive_mlc_allocation in H39.
-    induction r_bar_val.
     destruct e.
+    induction r_bar_val.
     apply (H m m0 r p lambda c F V C R).
     auto. injection H39; injection H1; intros; rewrite -> H44;
     rewrite -> H43; exact H2. exact H3.
-    discriminate.
-    destruct e. destruct (NatMap.find lambda0 m). destruct (cachelet_allocation a r4 s).
+    subst. destruct (NatMap.find lambda0 m). destruct (cachelet_allocation a r4 s).
     destruct (get_cache_hierarchy_parent (cache_node lambda0) H18).
     destruct c0. subst.
-    apply (wf1 (runtime_state_value m1 m2 r0 (NatMap.add p1 (process_value e' l' q) p))).
-    
+    (* case_eq (NatMap.mem lambda0 m). intros. *)
+
     give_up.
     discriminate.
     discriminate.
@@ -92,7 +189,7 @@ Proof.
     destruct lambda0. destruct (NatMap.find p2 m).
     destruct (cc_hit_write s e' l0 v). destruct l0.
     injection H33. injection H1. intros.
-    rewrite -> H37 in H38.
+    rewrite -> H37 in H38. subst.
     give_up.
     destruct (get_cache_hierarchy_parent (cache_node p2) H18).
     give_up.
@@ -115,73 +212,35 @@ Proof.
     auto. rewrite -> H25; injection H1; intros; rewrite -> H36; exact H2. exact H3.
   - apply (H m m0 r p lambda c F V C R).
     auto. rewrite -> H10; injection H1; intros; rewrite -> H19; exact H2. exact H3.
-
-
-Definition wf1 (sigma: runtime_state): Prop :=
-  forall k mu rho pi,
-  (sigma = runtime_state_value k mu rho pi) ->
-  (forall lambda c F V C R, (NatMap.find lambda k) = Some (single_level_cache F V C R) ->
-  ((In c F) -> (CacheletMap.find c C <> None))).
-
-Lemma wf1_preservation : forall sigma obs sigma' obs',
-  wf1 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf1 sigma'.
-Proof.
-  intros.
-  unfold wf1 in *.
-  intros.
-
-
-
-Definition wf1 (sigma: runtime_state): Prop :=
-  match sigma with
-  | runtime_state_value k mu rho pi =>
-    (forall lambda c,
-      match (NatMap.find lambda k) with
-      | Some (single_level_cache F V C R) => ((In c F) -> (CacheletMap.find c C <> None))
-      | None => True
-      end)
-  end.
-
-
-
-Lemma wf1_C : forall state k lambda h_tree k',
-  (mlc_deallocation state k lambda h_tree = Some k') ->
-  (forall lambda', match (NatMap.find lambda' k) with
-    | Some (single_level_cache F V C R) =>
-      match (NatMap.find lambda' k') with
-      | Some (single_level_cache F' V' C' R') =>
-        (F = F' /\ C = C') \/ (exists l, F' = l ++ F)
-      | None => False
-      end
-    | None => True
-    end).
-Proof.
-  intros.
-  remember (NatMap.find lambda' k) as s.
-  remember (NatMap.find lambda' k') as s'.
-  case s; case s'.
-  intros.
-  destruct s1. destruct s0.
-  unfold mlc_deallocation in H. unfold recursive_mlc_deallocation in H.
-  destruct state. destruct e. induction (get_hierarchy_tree_height h_tree).
-  discriminate.
 Admitted.
 
-Lemma wf1_preservation : forall sigma obs sigma' obs',
-  wf1 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf1 sigma'.
+
+Definition wf4 (sigma: runtime_state): Prop :=
+  forall k mu rho pi p epsilon l q e E raw_e,
+  (sigma = runtime_state_value k mu rho pi) ->
+  (NatMap.find p pi = Some (process_value epsilon l q)) ->
+  (epsilon = enclave_state_value e E) ->
+  (e = enclave_ID_inactive \/ (e = enclave_ID_active raw_e /\ NatMap.find raw_e E <> None)).
+
+Lemma wf4_preservation : forall sigma obs sigma' obs',
+  wf4 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf4 sigma'.
 Proof.
   destruct sigma; destruct sigma'.
-  unfold wf1 in *.
+  unfold wf4 in *.
   intros.
   inversion H0.
-  - inversion H12.
-    give_up. give_up. give_up. give_up.
-    rewrite <- H22; apply (H lambda c).
-    rewrite <- H22; apply (H lambda c).
-    rewrite <- H22; apply (H lambda c).
-    rewrite <- H22; apply (H lambda c).
-  - rewrite <- H7; apply (H lambda c).
-Admitted.
+  inversion H15.
+  subst.
+  - give_up.
+  - give_up.
+  - give_up.
+  - give_up.
+  - give_up.
+  - give_up.
+  - give_up.
+  - apply (H m m0 r p p1 epsilon l q e E raw_e).
+    auto. injection H1. intros. subst. auto.
+
 
 (*
 Lemma lemmaA1 : forall sigma obs sigma' obs',
