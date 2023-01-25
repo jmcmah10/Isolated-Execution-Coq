@@ -72,23 +72,11 @@ Proof.
   intros. apply cmp_uneq_helper2 in H. apply IHx in H. exact H.
 Qed.
 
-Definition wf_h_tree (sigma: runtime_state): Prop :=
-  forall k mu rho pi lambda F V C R h_tree,
+Definition wf_c (sigma: runtime_state): Prop :=
+  forall k mu rho pi lambda F V C R,
   (sigma = runtime_state_value k mu rho pi) ->
   (NatMap.MapsTo lambda (single_level_cache F V C R) k) ->
-  (forall q cn, q = cache_node cn -> In q h_tree -> NatMap.In cn k).
-
-Lemma wf_h_tree_preservation : forall sigma obs sigma' obs',
-  wf_h_tree sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf_h_tree sigma'.
-Proof.
-  destruct sigma; destruct sigma'.
-  unfold wf_h_tree in *.
-  intros.
-  inversion H0.
-  inversion H16.
-  - subst.
-    unfold mlc_read in *. unfold recursive_mlc_read in *.
-Admitted.
+  (forall w s, False <-> (CacheletMap.In (w, s) C)).
 
 Definition wf1 (sigma: runtime_state): Prop :=
   forall k mu rho pi lambda c F V C R,
@@ -111,6 +99,113 @@ Lemma mlc_allocation_add : forall n e k lambda h_tree k0 k1 x y,
   (NatMap.add x y k0 = k1)
 *)
 
+Lemma wf1_alloc_c : forall n e psi psi' F V C R F' V' C' R',
+  cachelet_allocation n e psi = Some psi' ->
+  psi = single_level_cache F V C R ->
+  psi' = single_level_cache F' V' C' R' ->
+  C = C'.
+Proof.
+  intros.
+  unfold cachelet_allocation in H.
+  case_eq psi; intros; destruct psi.
+  injection H0; injection H2; intros; subst c v w s; subst c0 v0 w0 s0; clear H0 H2.
+  subst psi'.
+  unfold recursive_cachelet_allocation in H; unfold cachelet_allocation in H.
+  
+
+  induction n.
+  injection H; intros; subst; auto.
+  fold recursive_cachelet_allocation in *.
+  case_eq (way_first_allocation F); intros; destruct (way_first_allocation F).
+  destruct c0.
+  case_eq (NatMap.find s R); intros; destruct (NatMap.find s R).
+  case_eq (NatMap.find e V); intros; destruct (NatMap.find e V).
+  case_eq (NatMap.find s r0); intros; destruct (NatMap.find s r0).
+  injection H0; injection H1; injection H2; injection H3; intros; subst p r w1 c; clear H0 H1 H2.
+  apply IHn.
+  rewrite <- H.
+  (* this is not true :(  *)
+
+  give_up.
+  discriminate.
+  discriminate.
+
+  give_up.
+  discriminate.
+  discriminate.
+
+  give_up.
+  discriminate.
+  discriminate.
+  discriminate.
+  discriminate.
+  discriminate.
+  discriminate.
+Admitted.
+
+Lemma wf1_alloc_f : forall n e psi psi' F V C R F' V' C' R' c,
+  cachelet_allocation n e psi = Some psi' ->
+  psi = single_level_cache F V C R ->
+  psi' = single_level_cache F' V' C' R' ->
+  In c F' -> In c F.
+Proof.
+  intros.
+  unfold cachelet_allocation in H.
+  case_eq psi; intros; destruct psi.
+  injection H0; intros; subst.
+  injection H3; intros; subst c0 v w s; clear H0 H3.
+  
+  induction n.
+  unfold recursive_cachelet_allocation in H.
+  injection H; intros; subst; exact H2.
+  unfold recursive_cachelet_allocation in H.
+  case_eq (way_first_allocation F); intros.
+  assert (H1 := H0).
+  unfold way_first_allocation in H1.
+  unfold cachelet_min_way_ID in H1.
+  destruct (way_first_allocation F).
+  destruct c1.
+  case_eq (NatMap.find s R); intros; destruct (NatMap.find s R).
+  case_eq (NatMap.find e V); intros; destruct (NatMap.find e V).
+  case_eq (NatMap.find s r0); intros; destruct (NatMap.find s r0).
+  injection H0; injection H3; injection H4; injection H5; intros; subst.
+  apply IHn.
+  rewrite <- H; fold recursive_cachelet_allocation.
+  (* this is not true *)
+
+  give_up.
+  discriminate.
+  discriminate.
+  injection H3; injection H4; intros; subst.
+  give_up.
+  discriminate.
+  discriminate.
+  give_up.
+  discriminate.
+  discriminate.
+  discriminate.
+  discriminate.
+  destruct (way_first_allocation F).
+  discriminate.
+  discriminate.
+Admitted.
+
+Lemma unfold_lemma : forall s e l F V C R ci wscv delta,
+  cc_unfold s e l = cc_unfold_valid F V C R ci wscv delta.
+Proof.
+  intros.
+  unfold cc_unfold.
+  case_eq s; intros.
+  case_eq l; intros.
+  case_eq (block_to_set_and_tag b s0); intros.
+  unfold block_to_set_and_tag in H1.
+  injection H1; intros.
+  case_eq (find_way_ID_with_cache_tag e s1 c0 v w); intros.
+  case_eq (CacheletMap.find (w0, s1) w); intros.
+  give_up.
+Admitted.
+  
+
 Lemma wf1_preservation : forall sigma obs sigma' obs',
   wf1 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf1 sigma'.
 Proof.
@@ -126,6 +221,12 @@ Proof.
     case_eq (NatMap.find p2 m); intros; destruct (NatMap.find p2 m) in H33.
     case_eq (cc_hit_read s0 e' l0); intros; destruct (cc_hit_read s0 e' l0) in H33.
     unfold cc_hit_read in H5.
+    case_eq (cc_unfold s0 e' l0); intros.
+    give_up.
+
+    (*
+    give_up.
+
     unfold cc_unfold in H5.
     destruct s0; destruct l0.
     unfold block_to_set_and_tag in H5. subst.
@@ -166,6 +267,8 @@ Proof.
     destruct lambda0. subst.
     give_up.
     give_up.
+    *)
+    give_up. give_up. give_up. give_up. give_up. give_up. give_up. give_up.
   - unfold mlc_allocation in H39; destruct e; unfold recursive_mlc_allocation in H39.
     destruct e.
     induction r_bar_val.
