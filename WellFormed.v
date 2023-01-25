@@ -129,10 +129,16 @@ Proof.
   give_up.
   discriminate.
   discriminate.
+  injection H0; injection H1; injection H2; intros; subst r0 p0 c; clear H0 H1 H2 H3.
+  apply IHn.
+  rewrite <- H.
 
   give_up.
   discriminate.
   discriminate.
+  injection H0; injection H1; intros; subst p0 c; clear H0 H1 H2.
+  apply IHn.
+  rewrite <- H.
 
   give_up.
   discriminate.
@@ -377,10 +383,10 @@ Proof.
 Admitted.
 *)
 
-
+(*
   intros.
   auto.
-  split.
+  (* split. *)
   - give_up.
   - split.
   { give_up. }
@@ -393,7 +399,12 @@ Qed.
   inversion H0.
   - give_up.
   -
+*)
+  give_up.
+  give_up.
+Admitted.
 
+(* Ignore this *)
 Inductive well_formed: runtime_state -> Prop :=
   | WF1 : forall sigma k mu rho pi F V C R lambda c,
   (sigma = runtime_state_value k mu rho pi) ->
