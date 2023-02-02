@@ -250,12 +250,42 @@ Fixpoint recursive_mlc_allocation (n: (list nat)) (e: raw_enclave_ID) (k: multi_
       end
     end
   end.
+Definition rec_alloc_optional_add (lambda : physical_cache_unit_ID) (psi : single_level_cache_unit) (k : option multi_level_cache) : option multi_level_cache :=
+  match k with
+  | None => None
+  | Some k' => Some (NatMap.add lambda psi k')
+  end.
+Fixpoint rmlca (n: (list nat)) (e: raw_enclave_ID) (k_opt: option multi_level_cache) (lambda: physical_cache_unit_ID) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
+  match n with
+  | nil => k_opt
+  | n_val :: n' =>
+    match k_opt with
+    | None => None
+    | Some k =>
+      match (NatMap.find lambda k) with
+      | None => None
+      | Some current_psi =>
+        match (cachelet_allocation n_val e current_psi) with
+        | None => None
+        | Some psi =>
+          match (get_cache_hierarchy_parent (cache_node lambda) h_tree) with
+          | None => None
+          | Some H =>
+            match H with
+            | cache_root => None
+            | cache_parent x => rec_alloc_optional_add lambda psi (rmlca n' e (Some k) x h_tree)
+            end
+          end
+        end
+      end
+    end
+  end.
 Definition mlc_allocation (n: (list nat)) (state: enclave_state) (k: multi_level_cache) (lambda: physical_cache_unit_ID) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
   match state with
   | enclave_state_value e_id _ =>
     match e_id with
     | enclave_ID_inactive => None
-    | enclave_ID_active e => recursive_mlc_allocation n e k lambda h_tree
+    | enclave_ID_active e => (* rmlca n e (Some k) lambda h_tree *) recursive_mlc_allocation n e k lambda h_tree
     end
   end.
 
