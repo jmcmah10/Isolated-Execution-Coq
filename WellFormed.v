@@ -1,4 +1,4 @@
- From Coq Require Import Lists.List.
+From Coq Require Import Lists.List.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Lia.
 From Coq Require Import FSets.FMapList.
@@ -74,98 +74,7 @@ Proof.
   right. apply cmp_to_uneq in H. exact H.
 Qed.
 
-(*
-Definition wf_c (sigma: runtime_state): Prop :=
-  forall k mu rho pi lambda psi F V C R,
-  (sigma = runtime_state_value k mu rho pi) ->
-  psi = single_level_cache F V C R ->
-  (NatMap.MapsTo lambda psi k) ->
-  (forall w s state l cache_val delta, cc_unfold psi state l = cc_unfold_valid F V C R (w, s) cache_val delta
-    <-> (CacheletMap.In (w, s) C)).
-
-Lemma find_way_ID_in_C : forall t s W C w,
-  find_way_ID_in_mask t s W C = Some w ->
-  CacheletMap.In (w, s) C.
-Admitted.
-
-Lemma wf_c_preservation : forall sigma obs sigma' obs',
-  wf_c sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf_c sigma'.
-Proof.
-  destruct sigma; destruct sigma'.
-  unfold wf_c in *.
-  intros.
-  split.
-  (*
-  {
-    intros.
-    unfold cc_unfold in H4.
-    case_eq psi; intros; destruct psi in H4.
-    case_eq l; intros; destruct l in H4.
-    case_eq (block_to_set_and_tag b0 s1); intros; destruct (block_to_set_and_tag b0 s1) in H4.
-    case_eq (find_way_ID_with_cache_tag state s3 c2 v0 w1); intros; destruct (find_way_ID_with_cache_tag state s3 c2 v0 w1) in H4.
-    case_eq (CacheletMap.find (w3, s3) w1); intros; destruct (CacheletMap.find (w3, s3) w1) in H4.
-    assert (H_CacheMap := H5); destruct (CacheletMap.find (w3, s3) w1) in H_CacheMap.
-    injection H_CacheMap; injection H4; intros; subst.
-    apply CacheletMapFacts.in_find_iff.
-    rewrite -> H5; intros contra; discriminate.
-    discriminate.
-    discriminate.
-    injection H4; intros; subst.
-    specialize (H 
-
-    give_up.
-    discriminate.
-    discriminate.
-    give_up.
-    discriminate.
-  }
-  *)
-
-  {
-    
-
-    intros.
-    inversion H0.
-    inversion H16.
-    subst.
-    {
-      unfold cc_unfold in H4.
-      case_eq l; intros; destruct l in H4.
-      case_eq (block_to_set_and_tag b0 R); intros; destruct (block_to_set_and_tag b0 R) in H4.
-      case_eq (find_way_ID_with_cache_tag state s1 c0 V C); intros; destruct (find_way_ID_with_cache_tag state s1 c0 V C) in H4.
-      case_eq (CacheletMap.find (w1, s1) C); intros; destruct (CacheletMap.find (w1, s1) C) in H4.
-      assert (H6' := H6); destruct (CacheletMap.find (w1, s1) C) in H6'.
-      injection H6'; injection H4; intros; subst.
-      apply CacheletMapFacts.in_find_iff.
-      rewrite -> H6. intros contra. discriminate.
-      injection H4; intros; subst.
-      discriminate.
-      discriminate.
-      injection H4; intros; subst.
-      assert (H_block := H2); unfold block_to_set_and_tag in H_block; injection H_block; intros; subst; clear H_block.
-      assert (H_find := H5); unfold find_way_ID_with_cache_tag in H_find.
-      case_eq state; intros; destruct state in H_find.
-      case_eq e1; intros; destruct e1 in H_find.
-      case_eq (NatMap.find r2 V); intros; destruct (NatMap.find r2 V) in H_find.
-      case_eq (NatMap.find s r4); intros; destruct (NatMap.find s r4) in H_find.
-      unfold find_way_ID_in_mask in H_find.
-      
-  }
-  {
-    inversion H0.
-    inversion H15.
-  }
-Admitted.
-*)
-
-  
-(* First Well-Formed Condition *)
-Definition wf1 (sigma: runtime_state): Prop :=
-  forall k mu rho pi lambda c F V C R,
-  (sigma = runtime_state_value k mu rho pi) ->
-  (NatMap.MapsTo lambda (single_level_cache F V C R) k) ->
-  ((In c F) -> (CacheletMap.In c C)).
-
+(* Cachelet Allocation Lemmas *)
 Lemma cachelet_allocation_c : forall n e psi psi' F V C R F' V' C' R',
   cachelet_allocation n e psi = Some psi' ->
   psi = single_level_cache F V C R ->
@@ -261,23 +170,6 @@ Proof.
   right; exact H.
   left; right; exact H.
 Qed.
-
-(*
-(* Proved the wrong thing oops :( *)
-Lemma remove_CAT_f2_helper_wrong_one : forall a c c' F,
-  In c (a :: recursive_remove_from_CAT c' F) \/ c = c' ->
-  (In c (recursive_remove_from_CAT c' F) \/ c = a) \/ c = c'.
-Proof.
-  intros.
-  destruct H.
-  left.
-  apply in_inv in H.
-  destruct H.
-  right; subst; auto.
-  left; exact H.
-  right; auto.
-Qed.
-*)
 
 Lemma remove_CAT_f2 : forall c c' F,
   In c F -> In c (recursive_remove_from_CAT c' F) \/ c = c'.
@@ -397,6 +289,10 @@ Proof.
   discriminate.
 Qed.
 
+(* Cachelet Deallocation Lemmas *)
+
+
+(* First Well-Formed Lemmas *)
 Lemma wf1_mlc_alloc : forall n state k lambda h_tree k' index psi psi' F V C R F' V' C' R' c,
   mlc_allocation n state k lambda h_tree = Some k' ->
   NatMap.find index k = Some psi ->
@@ -417,7 +313,7 @@ Proof.
     injection H1; intros; subst psi' psi.
     injection H6; intros; subst.
     apply H4; exact H5.
-    discriminate.
+    discriminate. 
   }
   {
     intros.
@@ -566,6 +462,130 @@ Proof.
   }
 Qed.
 
+(* Well-Formed Definitions *)
+Definition wf1 (sigma: runtime_state): Prop :=
+  forall k mu rho pi lambda c F V C R,
+  (sigma = runtime_state_value k mu rho pi) ->
+  (NatMap.MapsTo lambda (single_level_cache F V C R) k) ->
+  ((In c F) -> (CacheletMap.In c C)).
+
+Definition wf_c (sigma: runtime_state): Prop :=
+  forall k mu rho pi lambda psi F V C R,
+  (sigma = runtime_state_value k mu rho pi) ->
+  psi = single_level_cache F V C R ->
+  (NatMap.find lambda k = Some psi) ->
+  (forall w s state l cache_val delta, cc_unfold psi state l = cc_unfold_valid F V C R (w, s) cache_val delta
+    -> (CacheletMap.In (w, s) C)).
+
+(* Well-Formed Way Set Cache *)
+(*
+Lemma wf_c_preservation_mlc_read : forall sigma
+*)
+
+Lemma wf_c_preservation : forall sigma obs sigma' obs',
+  wf1 sigma -> wf_c sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf_c sigma'.
+Proof.
+  destruct sigma; destruct sigma'.
+  unfold wf_c in *.
+  unfold wf1 in *.
+  intros.
+  injection H2; intros; subst; clear H2.
+  inversion H1.
+  inversion H15; subst.
+  - unfold mlc_read in H33.
+    assert (H34 := H33).
+    unfold recursive_mlc_read in H33.
+    induction (get_hierarchy_tree_height H18).
+    discriminate.
+    fold recursive_mlc_read in IHn. apply IHn.
+    case_eq lambda0; intros. assert (H2' := H2). destruct lambda0 in H33, H2'.
+    case_eq (NatMap.find p2 m); intros.
+    assert (H3' := H2). destruct (NatMap.find p2 m) in H33, H3'.
+    case_eq (cc_hit_read s1 e' l1); intros. assert (H4' := H3).
+    destruct (cc_hit_read s1 e' l1) in H33, H4'.
+
+    injection H2'; injection H3'; injection H4'; intros; subst; clear H2' H3' H4'.
+    injection H33; intros. subst delta0 d obs0 k.
+    
+
+    
+    case_eq (NatMap.find lambda k).
+    intros. assert (H6' := H6). destruct (NatMap.find lambda k) in H, H6'.
+
+    give_up.
+    
+  - give_up.
+  - give_up.
+  - give_up.
+  - specialize (H0 k mu rho p lambda (single_level_cache F V C R) F V C R) as H_app.
+    assert (forall (w : way_ID) (s : set_ID) (state : enclave_state) (l : memory_address)
+          (cache_val : way_set_cache_value) (delta : data_offset),
+        cc_unfold (single_level_cache F V C R) state l =
+        cc_unfold_valid F V C R (w, s) cache_val delta ->
+        CacheletMap.In (elt:=way_set_cache_value) (w, s) C).
+    apply H_app.
+    reflexivity.
+    reflexivity.
+    exact H4.
+    specialize (H2 w s state l cache_val delta) as H_app2.
+    apply H_app2.
+    exact H5.
+  - specialize (H0 k mu rho p lambda (single_level_cache F V C R) F V C R) as H_app.
+    assert (forall (w : way_ID) (s : set_ID) (state : enclave_state) (l : memory_address)
+          (cache_val : way_set_cache_value) (delta : data_offset),
+        cc_unfold (single_level_cache F V C R) state l =
+        cc_unfold_valid F V C R (w, s) cache_val delta ->
+        CacheletMap.In (elt:=way_set_cache_value) (w, s) C).
+    apply H_app.
+    reflexivity.
+    reflexivity.
+    exact H4.
+    specialize (H2 w s state l cache_val delta) as H_app2.
+    apply H_app2.
+    exact H5.
+  - specialize (H0 k mu rho p lambda (single_level_cache F V C R) F V C R) as H_app.
+    assert (forall (w : way_ID) (s : set_ID) (state : enclave_state) (l : memory_address)
+          (cache_val : way_set_cache_value) (delta : data_offset),
+        cc_unfold (single_level_cache F V C R) state l =
+        cc_unfold_valid F V C R (w, s) cache_val delta ->
+        CacheletMap.In (elt:=way_set_cache_value) (w, s) C).
+    apply H_app.
+    reflexivity.
+    reflexivity.
+    exact H4.
+    specialize (H2 w s state l cache_val delta) as H_app2.
+    apply H_app2.
+    exact H5.
+  - specialize (H0 k mu rho p lambda (single_level_cache F V C R) F V C R) as H_app.
+    assert (forall (w : way_ID) (s : set_ID) (state : enclave_state) (l : memory_address)
+          (cache_val : way_set_cache_value) (delta : data_offset),
+        cc_unfold (single_level_cache F V C R) state l =
+        cc_unfold_valid F V C R (w, s) cache_val delta ->
+        CacheletMap.In (elt:=way_set_cache_value) (w, s) C).
+    apply H_app.
+    reflexivity.
+    reflexivity.
+    exact H4.
+    specialize (H2 w s state l cache_val delta) as H_app2.
+    apply H_app2.
+    exact H5.
+  - subst.
+    specialize (H0 k mu rho p lambda (single_level_cache F V C R) F V C R) as H_app.
+    assert (forall (w : way_ID) (s : set_ID) (state : enclave_state) (l : memory_address)
+          (cache_val : way_set_cache_value) (delta : data_offset),
+        cc_unfold (single_level_cache F V C R) state l =
+        cc_unfold_valid F V C R (w, s) cache_val delta ->
+        CacheletMap.In (elt:=way_set_cache_value) (w, s) C).
+    apply H_app.
+    reflexivity.
+    reflexivity.
+    exact H4.
+    specialize (H2 w s state l cache_val delta) as H_app2.
+    apply H_app2.
+    exact H5.
+Admitted.
+
+(* First Well-Formed Condition *)
 Lemma wf1_preservation : forall sigma obs sigma' obs',
   wf1 sigma -> <<sigma; obs>> ===> <<sigma'; obs'>> -> wf1 sigma'.
 Proof.
