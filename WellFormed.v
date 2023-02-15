@@ -2095,6 +2095,8 @@ Proof.
       injection H0; intros; subst s.
       destruct s1.
       case_eq (V_range v enc). intros.
+
+
       specialize (IHL (NatMap.add index (single_level_cache c0 v w s) k) k' index
       (single_level_cache c0 v w s) psi' c0 v w s F' V' C' R' c enc l ranV').
       apply IHL.
