@@ -18,35 +18,35 @@ Notation "'<<' k ',' m ',' r ',' e '|' obs ',' q ',' n '>>'" := (post_process_st
 Reserved Notation "c1 '-->>' c2" (at level 40).
 
 Inductive single_process_sem : pre_single_process_state -> post_single_process_state -> Prop :=
-| Load: forall k mu rho e i l r q H lambda D delta obs k',
+| Load: forall k mu rho e i l r q lambda h_tree D delta obs k',
+    well_defined_cache_tree h_tree ->
     i = load l r ->
-    get_cache_hierarchy_parent (core_node q) H = Some (lambda) ->
-    mlc_read k lambda e mu l H = mlc_read_valid D delta obs k' ->
+    mlc_read k e mu l lambda h_tree = mlc_read_valid D delta obs k' ->
     <<k, mu, rho, e | i, q>> -->> <<k', mu, rho, e | obs, q, 1>>
-| Create: forall k mu rho e i r1 r2 r3 r_bar r_val1 r_val2 r_val2_addr r_val3 r_bar_val q H lambda k' e',
+| Create: forall k mu rho e i r1 r2 r3 r_bar r_val1 r_val2 r_val2_addr r_val3 r_bar_val q lambda h_tree k' e',
+    well_defined_cache_tree h_tree ->
     i = create r1 r2 r3 r_bar ->
     (NatMap.find r1 rho) = Some (memory_value_data (data_value r_val1)) ->
     (NatMap.find r2 rho) = Some (memory_value_data (data_value r_val2)) ->
     (NatMap.find r3 rho) = Some (memory_value_data (data_value r_val3)) ->
     read_register_list rho r_bar = Some (r_bar_val) ->
-    get_cache_hierarchy_parent (core_node q) H = Some (cache_parent lambda) ->
     number_to_memory_address mu r_val2 = Some (r_val2_addr) ->
     enclave_creation e mu r_val1 r_val2_addr r_val3 = enclave_state_valid e' ->
-    mlc_allocation r_bar_val e k lambda H = Some k' ->
+    mlc_allocation r_bar_val e k lambda h_tree = Some k' ->
     <<k, mu, rho, e | i, q>> -->> <<k', mu, rho, e' | nil, q, r_val1>>
-| Store: forall k mu rho e i r l v q H lambda D obs mu' k',
+| Store: forall k mu rho e i r l v q lambda h_tree D obs mu' k',
+    well_defined_cache_tree h_tree ->
     i = store r l ->
-    get_cache_hierarchy_parent (core_node q) H = Some (lambda) ->
-    mlc_write k lambda e mu l v H = mlc_write_valid D obs mu' k' ->
+    mlc_write k e mu l v lambda h_tree = mlc_write_valid D obs mu' k' ->
     <<k, mu, rho, e | i, q>> -->> <<k', mu', rho, e | nil, q, 1>>
-| Destroy: forall k mu rho e e_raw mem i r r_val q lambda H k' mu' e',
+| Destroy: forall k mu rho e e_raw mem i r r_val q lambda h_tree k' mu' e',
+    well_defined_cache_tree h_tree ->
     i = destroy r ->
     (NatMap.find r rho) = Some (memory_value_data (data_value r_val)) ->
-    get_cache_hierarchy_parent (core_node q) H = Some (cache_parent lambda) ->
-    mlc_deallocation e k lambda H = Some k' ->
+    mlc_deallocation e k lambda h_tree = Some k' ->
     e = enclave_state_value (enclave_ID_active e_raw) mem ->
     reinitialize_memory e_raw e mu = Some mu' ->
-    enclave_elimination e r_val = e' ->
+    enclave_elimination e r_val = enclave_state_valid e' ->
     <<k, mu, rho, e | i, q>> -->> <<k', mu', rho, e' | nil, q, 1>>
 | Enter: forall k mu rho e i r q e' r_val,
     i = enter r ->

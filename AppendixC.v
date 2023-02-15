@@ -183,10 +183,10 @@ Fixpoint recursive_cachelet_allocation (n: nat) (e: raw_enclave_ID) (F: CAT) (V:
       | None => None
       | Some T' => 
         match (NatMap.find e V) with
-        | None => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e (NatMap.add s (w :: nil) (NatMap.empty (list way_ID))) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+        | None => None
         | Some L =>
           match (NatMap.find s L) with
-          | None => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e (NatMap.add s (w :: nil) L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+          | None => None
           | Some W => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e (NatMap.add s (w :: W) L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
           end
         end
@@ -211,7 +211,7 @@ Fixpoint free_cachelets (e: raw_enclave_ID) (s: set_ID) (W: way_mask) (F: CAT) (
   end.
 Fixpoint clear_remapping_list (e: raw_enclave_ID) (L: list (set_ID * way_mask % type)) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
   match L with
-  | nil => Some (single_level_cache F (NatMap.remove e V) C R)
+  | nil => Some (single_level_cache F (NatMap.add e (NatMap.empty way_mask) V) C R)
   | (s, W) :: L' =>
     match (free_cachelets e s W F V C R) with
     | None => None
