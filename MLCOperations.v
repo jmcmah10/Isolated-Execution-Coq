@@ -7,24 +7,12 @@ Require Import RuntimeDefinitions.
 (* Appendix A, Appendix B, Fig 6, and Fig 7 *)
 
 (* Cache Hierarchy Tree *)
-(* Maps core_ID to path to root *)
+(* Mapping between root, cache, or core -> path to root *)
 Inductive cache_tree_node : Type :=
 | root_node : cache_tree_node
 | core_node : core_ID -> cache_tree_node
 | cache_node : physical_cache_unit_ID -> cache_tree_node.
 Definition cache_hierarchy_tree : Type := list (cache_tree_node * (list physical_cache_unit_ID)).
-
-(*
-Definition well_defined_cache_tree (h_tree : cache_hierarchy_tree): Prop :=
-  (In (root_node, nil) h_tree) /\ (forall l, l <> nil -> ~In (root_node, l) h_tree) /\
-  (forall m, m = root_node <-> In (m, nil) h_tree) /\
-  (forall c_node c, c_node = cache_node c -> exists! l, In (c_node, c :: l) h_tree) /\
-  (forall q_node q, q_node = core_node q -> exists! l, In (q_node, l) h_tree) /\
-  (forall c_node c c_node' c' l, c_node = cache_node c -> c_node' = cache_node c' ->
-    (In (c_node, c :: c' :: l) h_tree) -> (In (c_node, c' :: l) h_tree)) /\
-  (forall c_node c q_node q l, c_node = cache_node c -> q_node = core_node q ->
-    (In (q_node, c :: l) h_tree) -> (In (c_node, c :: l) h_tree)).
-*)
 
 Fixpoint recursive_get_cache_list_root (c: cache_tree_node) (h_tree: cache_hierarchy_tree): option (list physical_cache_unit_ID) :=
   match h_tree with

@@ -28,10 +28,10 @@ Definition cachelet_min_way_ID (l: (list cachelet_index)): nullable_cachelet_ind
 Definition way_first_allocation (F: CAT): nullable_cachelet_index := cachelet_min_way_ID F.
 
 (* Cachelet Invalidation*)
-Definition cachelet_invalidation (C: way_set_cache) (ci: cachelet_index): way_set_cache :=
+Definition cachelet_invalidation (C: way_set_cache) (ci: cachelet_index): option way_set_cache :=
   match (CacheletMap.find ci C) with
-  | Some (valid_bit_tag_and_data _ c d) => CacheletMap.add ci (valid_bit_tag_and_data dirty_bit c d) C
-  | None => C
+  | Some (valid_bit_tag_and_data _ c d) => Some (CacheletMap.add ci (valid_bit_tag_and_data dirty_bit c d) C)
+  | None => None
   end.
 
 (* Beta Function *)
@@ -206,12 +206,20 @@ Fixpoint free_cachelets (e: raw_enclave_ID) (s: set_ID) (W: way_mask) (F: CAT) (
   | w :: W' => 
     match (NatMap.find s R) with
     | None => None
-    | Some T' => (free_cachelets e s W' ((w, s) :: F) V (cachelet_invalidation C (w, s)) (NatMap.add s (update T' w (enclave_ID_active e)) R))
+    | Some T' =>
+      match (cachelet_invalidation C (w, s)) with
+      | None => None
+      | Some C_inv =>
+        match (NatMap.find e V) with
+        | Some L => (free_cachelets e s W' ((w, s) :: F) (NatMap.add e (NatMap.add s W' L) V) C_inv (NatMap.add s (update T' w (enclave_ID_active e)) R))
+        | None => None
+        end
+      end
     end
   end.
 Fixpoint clear_remapping_list (e: raw_enclave_ID) (L: list (set_ID * way_mask % type)) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
   match L with
-  | nil => Some (single_level_cache F (NatMap.add e (NatMap.empty way_mask) V) C R)
+  | nil => Some (single_level_cache F V C R)
   | (s, W) :: L' =>
     match (free_cachelets e s W F V C R) with
     | None => None
