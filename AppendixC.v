@@ -42,18 +42,22 @@ Definition block_to_set_and_tag (val: block_ID) (sets: set_indexed_PLRU) : set_a
 
 
 (* Find Way ID *)
-Fixpoint find_way_ID_in_mask (t: cache_tag_value) (s: set_ID) (W: way_mask) (C: way_set_cache): option way_ID :=
-  match W with
+Fixpoint find_way_ID_in_mask (t: cache_tag_value) (s: set_ID) (L: remapping_list) (C: way_set_cache): option way_ID :=
+  match L with
   | nil => None
-  | w :: W' =>
-    match (CacheletMap.find (w, s) C) with
-    | None => find_way_ID_in_mask t s W' C
-    | Some cache_value =>
-      match cache_value with
-      | valid_bit_tag_and_data vb t' D =>
-        match t =? t' with
-        | true => Some w
-        | false => find_way_ID_in_mask t s W' C
+  | (w', s') :: L' =>
+    match s =? s' with
+    | false => find_way_ID_in_mask t s L' C
+    | true =>
+      match (CacheletMap.find (w', s) C) with
+      | None => find_way_ID_in_mask t s L' C
+      | Some cache_value =>
+        match cache_value with
+        | valid_bit_tag_and_data vb t' D =>
+          match t =? t' with
+          | true => Some w'
+          | false => find_way_ID_in_mask t s L' C
+          end
         end
       end
     end
@@ -66,11 +70,7 @@ Definition find_way_ID_with_cache_tag (state: enclave_state) (s: set_ID) (t: cac
     | enclave_ID_active e =>
       match (NatMap.find e V) with
       | None => None
-      | Some L =>
-        match (NatMap.find s L) with
-        | None => None
-        | Some W => find_way_ID_in_mask t s W C
-        end
+      | Some L => find_way_ID_in_mask t s L C
       end
     end
   end.
@@ -184,11 +184,7 @@ Fixpoint recursive_cachelet_allocation (n: nat) (e: raw_enclave_ID) (F: CAT) (V:
       | Some T' => 
         match (NatMap.find e V) with
         | None => None
-        | Some L =>
-          match (NatMap.find s L) with
-          | None => None
-          | Some W => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e (NatMap.add s (w :: W) L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
-          end
+        | Some L => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e ((w, s) :: L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
         end
       end
     end
@@ -200,32 +196,16 @@ Definition cachelet_allocation (n: nat) (e: raw_enclave_ID) (psi: single_level_c
 
 
 (* Cachelet Deallocation *)
-Fixpoint free_cachelets (e: raw_enclave_ID) (s: set_ID) (W: way_mask) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
-  match W with
+Fixpoint clear_remapping_list (e: raw_enclave_ID) (L: remapping_list) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
+  match L with
   | nil => Some (single_level_cache F V C R)
-  | w :: W' => 
+  | (w, s) :: L' =>
     match (NatMap.find s R) with
     | None => None
     | Some T' =>
       match (cachelet_invalidation C (w, s)) with
       | None => None
-      | Some C_inv =>
-        match (NatMap.find e V) with
-        | Some L => (free_cachelets e s W' ((w, s) :: F) (NatMap.add e (NatMap.add s W' L) V) C_inv (NatMap.add s (update T' w (enclave_ID_active e)) R))
-        | None => None
-        end
-      end
-    end
-  end.
-Fixpoint clear_remapping_list (e: raw_enclave_ID) (L: list (set_ID * way_mask % type)) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
-  match L with
-  | nil => Some (single_level_cache F V C R)
-  | (s, W) :: L' =>
-    match (free_cachelets e s W F V C R) with
-    | None => None
-    | Some psi' =>
-      match psi' with
-      | single_level_cache F' V' C' R' => clear_remapping_list e L' F' V' C' R'
+      | Some C_inv => (clear_remapping_list e L' ((w, s) :: F) (NatMap.add e L' V) C_inv (NatMap.add s (update T' w (enclave_ID_active e)) R))
       end
     end
   end.
@@ -234,6 +214,6 @@ Definition cachelet_deallocation (e: raw_enclave_ID) (psi: single_level_cache_un
   | single_level_cache F V C R =>
     match (NatMap.find e V) with
     | None => None
-    | Some L => clear_remapping_list e (NatMapProperties.to_list L) F V C R
+    | Some L => clear_remapping_list e L F V C R
     end
   end.

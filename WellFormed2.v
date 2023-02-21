@@ -382,48 +382,6 @@ Proof.
 Qed.
 
 (* WF3 MLC Deallocation *)
-Lemma clear_remapping_list_v : forall r r1 F V C R F' V' C' R' enc,
-  NatMap.In r V ->
-  clear_remapping_list r (NatMapProperties.to_list r1) F V C R = Some (single_level_cache F' V' C' R') ->
-  (NatMap.In enc V <-> NatMap.In enc V').
-Proof.
-  intros r r0.
-  induction (NatMapProperties.to_list r0).
-  {
-    intros.
-    unfold clear_remapping_list in H0.
-    injection H0; intros; subst.
-    split.
-    intros.
-    apply NatMapFacts.add_in_iff.
-    right. exact H1.
-    intros.
-    apply NatMapFacts.add_in_iff in H1.
-    destruct H1.
-    subst. exact H.
-    exact H1.
-  }
-  {
-    intros.
-    unfold clear_remapping_list in H0.
-    fold clear_remapping_list in H0.
-    case_eq a. intros.
-    destruct a.
-    injection H1; intros; subst k0 w0; clear H1.
-    case_eq (free_cachelets r k w F V C R); intros.
-    assert (A0 := H1). destruct (free_cachelets r k w F V C R) in A0, H0.
-    injection A0; intros; subst s0; clear A0.
-    destruct s.
-    apply (free_cachelets_v w r k F V C R c v w0 s) in H1. subst v.
-    apply (IHl c V w0 s F' V' C' R' enc).
-    exact H. exact H0.
-    discriminate.
-    destruct (free_cachelets r k w F V C R).
-    discriminate.
-    discriminate.
-  }
-Qed.
-
 Lemma V_range_add_empty : forall V r enc ranV ranV' c,
   V_range V enc = Some ranV ->
   V_range (NatMap.add r (NatMap.empty way_mask) V) enc = Some ranV' ->

@@ -60,7 +60,6 @@ Inductive enclave_state : Type :=
 
 
 (* CC-Related Structures *)
-Definition way_mask := list way_ID.
 Inductive validity_bit : Type :=
 | valid_bit : validity_bit
 | dirty_bit : validity_bit.
@@ -70,7 +69,7 @@ Inductive nullable_cachelet_index : Type :=
 | cachelet_index_none : nullable_cachelet_index.
 
 Definition data_block := NatMap.t memory_value.
-Definition remapping_list := NatMap.t way_mask.
+Definition remapping_list := list cachelet_index.
 (* Extra structure to hold data in way_set_cache *)
 Inductive way_set_cache_value : Type :=
 | valid_bit_tag_and_data : validity_bit -> cache_tag_value -> data_block -> way_set_cache_value.
