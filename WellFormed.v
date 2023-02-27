@@ -864,10 +864,10 @@ Proof.
   discriminate.
 Qed.
 
-Lemma clear_remapping_list_v : forall l e F V C R F' V' C' R' r,
+Lemma clear_remapping_list_v_uneq : forall l e F V C R F' V' C' R' r,
   clear_remapping_list e l F V C R = Some (single_level_cache F' V' C' R') ->
   NatMap.find e V = Some l ->
-  (NatMap.In r V <-> NatMap.In r V').
+  e <> r -> (NatMap.In r V <-> NatMap.In r V').
 Proof.
   intros l.
   induction l.
@@ -875,7 +875,59 @@ Proof.
     intros.
     unfold clear_remapping_list in H.
     injection H; intros; subst.
-    split; intros; exact H1.
+    split; intros.
+    apply NatMapFacts.remove_in_iff.
+    split. exact H1. exact H2.
+    apply NatMapFacts.remove_in_iff in H2.
+    destruct H2. exact H3.
+  }
+  {
+    intros.
+    unfold clear_remapping_list in H.
+    fold clear_remapping_list in H.
+    destruct a.
+    case_eq (NatMap.find s R). intros.
+    assert (A0 := H2). destruct (NatMap.find s R) in A0, H.
+    case_eq (cachelet_invalidation C (w, s)). intros.
+    assert (A1 := H3). destruct (cachelet_invalidation C (w, s)) in A1, H.
+    injection A0; injection A1; intros; subst p w1; clear A0 A1.
+    assert (NatMap.In r V <-> NatMap.In r (NatMap.add e l V)).
+    split; intros.
+    apply NatMapFacts.add_in_iff; right; exact H4.
+    apply (NatMapFacts.add_in_iff) in H4; destruct H4.
+    apply H1 in H4. destruct H4. exact H4.
+    apply (iff_trans (NatMap.In r V) (NatMap.In r (NatMap.add e l V)) (NatMap.In r V')).
+    exact H4.
+    apply (IHl e ((w, s) :: F) (NatMap.add e l V) w0 (NatMap.add s (update p0 w
+    (enclave_ID_active e)) R) F' V' C' R' r).
+    exact H.
+    apply NatMapFacts.add_eq_o. reflexivity. exact H1.
+    discriminate.
+    intros; destruct (cachelet_invalidation C (w, s)).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find s R).
+    discriminate.
+    discriminate.
+  }
+Qed.
+
+Lemma clear_remapping_list_v_eq : forall l e F V C R F' V' C' R',
+  clear_remapping_list e l F V C R = Some (single_level_cache F' V' C' R') ->
+  NatMap.find e V = Some l ->
+  ~NatMap.In e V'.
+Proof.
+  intros l e.
+  induction l.
+  {
+    intros.
+    unfold clear_remapping_list in H.
+    injection H; intros; subst.
+    intros contra.
+    apply NatMapFacts.remove_in_iff in contra.
+    destruct contra. unfold not in H1; destruct H1.
+    reflexivity.
   }
   {
     intros.
@@ -887,20 +939,9 @@ Proof.
     case_eq (cachelet_invalidation C (w, s)). intros.
     assert (A1 := H2). destruct (cachelet_invalidation C (w, s)) in A1, H.
     injection A0; injection A1; intros; subst p w1; clear A0 A1.
-    assert (NatMap.In r V <-> NatMap.In r (NatMap.add e l V)).
-    split; intros.
-    apply NatMapFacts.add_in_iff; right; exact H3.
-    assert (NatMap.find e V <> None).
-    intros contra; rewrite -> H0 in contra; discriminate.
-    apply NatMapFacts.in_find_iff in H4.
-    apply (NatMapFacts.add_in_iff) in H3. destruct H3.
-    subst. exact H4. exact H3.
-    apply (iff_trans (NatMap.In r V) (NatMap.In r (NatMap.add e l V)) (NatMap.In r V')).
-    exact H3.
-    apply (IHl e ((w, s) :: F) (NatMap.add e l V) w0 (NatMap.add s (update p0 w
-    (enclave_ID_active e)) R) F' V' C' R' r).
-    exact H.
-    apply NatMapFacts.add_eq_o. reflexivity.
+    apply (IHl ((w, s) :: F) (NatMap.add e l V) w0 (NatMap.add s (update p0 w
+    (enclave_ID_active e)) R) F' V' C' R').
+    exact H. apply NatMapFacts.add_eq_o; reflexivity.
     discriminate.
     intros; destruct (cachelet_invalidation C (w, s)).
     discriminate.
@@ -925,8 +966,18 @@ Proof.
     intros.
     unfold clear_remapping_list in H.
     injection H; intros; subst F' V' C' R'.
-    rewrite -> H1 in H2.
-    injection H2; intros; subst.
+    case_eq (eqb e r); intros.
+    apply cmp_to_eq in H4; subst r.
+    assert (NatMap.find (elt:=remapping_list) e (NatMap.remove
+    (elt:=remapping_list) e V) = None).
+    apply NatMapFacts.remove_eq_o; reflexivity.
+    rewrite -> H4 in H2. discriminate.
+    apply cmp_to_uneq in H4.
+    assert (NatMap.find (elt:=remapping_list) r (NatMap.remove
+    (elt:=remapping_list) e V) = NatMap.find (elt:=remapping_list) r V).
+    apply NatMapFacts.remove_neq_o. exact H4.
+    rewrite -> H2 in H5. rewrite -> H1 in H5.
+    injection H5; intros; subst.
     exact H3.
   }
   {
@@ -976,7 +1027,7 @@ Lemma cachelet_deallocation_v : forall e psi psi' F V C R F' V' C' R' r,
   cachelet_deallocation e psi = Some psi' ->
   psi = single_level_cache F V C R ->
   psi' = single_level_cache F' V' C' R' ->
-  NatMap.In r V <-> NatMap.In r V'.
+  e <> r -> NatMap.In r V <-> NatMap.In r V'.
 Proof.
   intros.
   unfold cachelet_deallocation in H.
@@ -984,8 +1035,8 @@ Proof.
   case_eq (NatMap.find e V). intros.
   assert (A0 := H0). destruct (NatMap.find e V) in A0, H.
   injection A0; intros; subst; clear A0.
-  apply (clear_remapping_list_v r0 e F V C R F' V' C' R' r) in H.
-  exact H. exact H0.
+  apply (clear_remapping_list_v_uneq r0 e F V C R F' V' C' R' r) in H.
+  exact H. exact H0. exact H2.
   discriminate.
   intros; destruct (NatMap.find e V).
   discriminate.
@@ -1797,8 +1848,18 @@ Proof.
     intros.
     unfold clear_remapping_list in H.
     injection H; intros; subst F' V' C' R'.
-    rewrite -> H1 in H2.
-    injection H2; intros; subst.
+    case_eq (eqb e e0); intros.
+    apply cmp_to_eq in H5; subst e0.
+    assert (NatMap.find (elt:=remapping_list) e (NatMap.remove (elt:=remapping_list)
+    e V) = None).
+    apply NatMapFacts.remove_eq_o; reflexivity.
+    rewrite -> H2 in H5. discriminate.
+    apply cmp_to_uneq in H5.
+    assert (NatMap.find (elt:=remapping_list) e0 (NatMap.remove (elt:=remapping_list)
+    e V) = NatMap.find (elt:=remapping_list) e0 V).
+    apply NatMapFacts.remove_neq_o; exact H5.
+    rewrite -> H2 in H6. rewrite -> H1 in H6.
+    injection H6; intros; subst.
     generalize H4.
     exact H3.
   }
@@ -1861,7 +1922,12 @@ Proof.
     intros.
     unfold clear_remapping_list in H.
     injection H; intros; subst.
-    exact H1.
+    case_eq (eqb e r); intros.
+    apply cmp_to_eq in H2; subst r.
+    apply NatMapFacts.remove_eq_o; reflexivity.
+    apply cmp_to_uneq in H2.
+    rewrite <- H1.
+    apply NatMapFacts.remove_neq_o; apply not_eq_sym; exact H2.
   }
   {
     intros.
@@ -1892,6 +1958,67 @@ Proof.
     discriminate.
     discriminate.
     intros; destruct (NatMap.find s R).
+    discriminate.
+    discriminate.
+  }
+Qed.
+
+Lemma wf2_mlc_dealloc_helper : forall r l k k' k'' index F V C R c v w s F' V' C' R' ranV,
+  recursive_mlc_deallocation r k'' l = Some k' ->
+  NatMap.find index k = Some (single_level_cache F V C R) ->
+  NatMap.find index k' = Some (single_level_cache F' V' C' R') ->
+  NatMap.find r V = Some ranV ->
+  NatMap.find r v = None ->
+  NatMap.find index k'' = Some (single_level_cache c v w s) ->
+  NatMap.find r V' = None.
+Proof.
+  intros r l.
+  induction l.
+  {
+    intros.
+    unfold recursive_mlc_deallocation in H.
+    injection H; intros; subst.
+    assert (NatMap.find index (NatMap.add index (single_level_cache c v w s) k)
+    = Some (single_level_cache c v w s)).
+    apply NatMapFacts.add_eq_o; reflexivity.
+    rewrite -> H1 in H4.
+    injection H4; intros; subst c v w s.
+    exact H3.
+  }
+  {
+    intros.
+    unfold recursive_mlc_deallocation in H.
+    fold recursive_mlc_deallocation in H.
+    case_eq (NatMap.find a k''). intros.
+    assert (A0 := H5). destruct (NatMap.find a k'') in H, A0.
+    case_eq (cachelet_deallocation r s1). intros.
+    assert (A1 := H6). destruct (cachelet_deallocation r s1) in A1, H.
+    injection A0; injection A1; intros; subst; clear A0 A1.
+    case_eq (eqb a index); intros.
+    {
+      apply cmp_to_eq in H7; subst index.
+      assert (NatMap.find a (NatMap.add a (single_level_cache c v w s) k) = Some (single_level_cache c v w s)).
+      apply NatMapFacts.add_eq_o; reflexivity.
+      destruct s0. rewrite -> H5 in H4.
+      injection H4; intros; subst.
+      unfold cachelet_deallocation in H6.
+      destruct (NatMap.find r v).
+      discriminate. discriminate.
+    }
+    {
+      apply cmp_to_uneq in H7.
+      apply (IHl k k' (NatMap.add a s2 k'') index
+      F V C R c v w s F' V' C' R' ranV).
+      exact H. exact H0. exact H1. exact H2. exact H3.
+      rewrite <- H4.
+      apply NatMapFacts.add_neq_o; exact H7.
+    }
+    discriminate.
+    intros; destruct (cachelet_deallocation r s1).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find a k'').
     discriminate.
     discriminate.
   }
@@ -2025,14 +2152,49 @@ Proof.
       {
         intros. destruct psi.
         injection H2; intros; subst c1 v0 w0 s0.
-        apply (cachelet_deallocation_v r (single_level_cache F V C R) (single_level_cache c0 v w s)
-        F V C R c0 v w s enc) in H9.
+        assert (HCD := H9).
+        unfold cachelet_deallocation in H9.
+        case_eq (NatMap.find r V); intros.
+        assert (A0 := H11); destruct (NatMap.find r V) in A0, H9.
+        injection A0; intros; subst r1; clear A0.
+        assert (CacheletMap.In c w).
+        apply (clear_remapping_list_v_uneq r0 r F V C R c0 v w s enc) in H9.
         apply NatMapFacts.in_find_iff in H10. destruct H10.
         apply H9.
         assert (NatMap.find enc V <> None).
         intros contra; rewrite -> H4 in contra; discriminate.
-        apply NatMapFacts.in_find_iff in H12. exact H12.
+        apply NatMapFacts.in_find_iff in H13. exact H13. exact H11.
+        case_eq (eqb r enc); intros.
+        apply cmp_to_eq in H12; subst enc.
+        assert (NatMap.find index (NatMap.add index (single_level_cache c0 v w s) k)
+        = Some (single_level_cache c0 v w s)).
+        apply NatMapFacts.add_eq_o; reflexivity.
+        apply (wf2_mlc_dealloc_helper r l k k' (NatMap.add index (single_level_cache c0 v w s) k)
+        index F V C R c0 v w s F' V' C' R' r0) in H.
+        rewrite -> H in H5; discriminate.
+        exact H8. subst psi'; exact H1. exact H11. exact H10.
+        apply NatMapFacts.add_eq_o; reflexivity.
+        apply cmp_to_uneq in H12; exact H12.
+        apply (cachelet_deallocation_v r (single_level_cache F V C R) (single_level_cache c0 v w s)
+        F V C R c0 v w s enc) in HCD.
+        apply NatMapFacts.in_find_iff in H10. destruct H10.
+        apply HCD.
+        assert (NatMap.find enc V <> None).
+        intros contra; rewrite -> H4 in contra; discriminate.
+        apply NatMapFacts.in_find_iff in H14. exact H14.
         reflexivity. reflexivity.
+        case_eq (eqb r enc); intros.
+        apply cmp_to_eq in H13; subst enc.
+        apply (wf2_mlc_dealloc_helper r l k k' (NatMap.add index (single_level_cache c0 v w s) k)
+        index F V C R c0 v w s F' V' C' R' r0) in H.
+        rewrite -> H in H5; discriminate.
+        exact H8. subst psi'; exact H1. exact H11. exact H10.
+        apply NatMapFacts.add_eq_o; reflexivity.
+        apply cmp_to_uneq in H13; exact H13.
+        discriminate.
+        destruct (NatMap.find r V); intros.
+        discriminate.
+        discriminate.
       }
     }
     {
@@ -2091,6 +2253,69 @@ Proof.
   destruct state; destruct e; discriminate.
 Qed.
 
+Lemma wf2_mlc_dealloc_none_helper : forall r l k k' k'' index F V C R c v w s F' V' C' R',
+  recursive_mlc_deallocation r k'' l = Some k' ->
+  NatMap.find index k = Some (single_level_cache F V C R) ->
+  NatMap.find index k' = Some (single_level_cache F' V' C' R') ->
+  NatMap.find r V = None ->
+  NatMap.find r v = None ->
+  NatMap.find index k'' = Some (single_level_cache c v w s) ->
+  NatMap.find r V' = None.
+Proof.
+  intros r l.
+  induction l.
+  {
+    intros.
+    unfold recursive_mlc_deallocation in H.
+    injection H; intros; subst.
+    assert (NatMap.find index (NatMap.add index (single_level_cache c v w s) k)
+    = Some (single_level_cache c v w s)).
+    apply NatMapFacts.add_eq_o; reflexivity.
+    rewrite -> H1 in H4.
+    injection H4; intros; subst c v w s.
+    exact H3.
+  }
+  {
+    intros.
+    unfold recursive_mlc_deallocation in H.
+    fold recursive_mlc_deallocation in H.
+    case_eq (NatMap.find a k''). intros.
+    assert (A0 := H5). destruct (NatMap.find a k'') in H, A0.
+    case_eq (cachelet_deallocation r s1). intros.
+    assert (A1 := H6). destruct (cachelet_deallocation r s1) in A1, H.
+    injection A0; injection A1; intros; subst; clear A0 A1.
+    case_eq (eqb a index); intros.
+    {
+      apply cmp_to_eq in H7; subst index.
+      destruct s0. rewrite -> H5 in H4.
+      injection H4; intros; subst.
+      unfold cachelet_deallocation in H6.
+      case_eq (NatMap.find r v). intros.
+      assert (A0 := H7). destruct (NatMap.find r v) in A0, H6.
+      injection A0; intros; subst r1; clear A0.
+      rewrite -> H3 in H7. discriminate. discriminate.
+      intros; destruct (NatMap.find r v).
+      discriminate. discriminate.
+    }
+    {
+      apply cmp_to_uneq in H7.
+      apply (IHl k k' (NatMap.add a s2 k'') index
+      F V C R c v w s F' V' C' R').
+      exact H. exact H0. exact H1. exact H2. exact H3.
+      rewrite <- H4.
+      apply NatMapFacts.add_neq_o; exact H7.
+    }
+    discriminate.
+    intros; destruct (cachelet_deallocation r s1).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find a k'').
+    discriminate.
+    discriminate.
+  }
+Qed.
+
 Lemma wf2_mlc_dealloc_none : forall lambda h_tree state k k' index psi psi' F V C R F' V' C' R' enc,
   well_defined_cache_tree h_tree ->
   mlc_deallocation state k lambda h_tree = Some k' ->
@@ -2140,12 +2365,28 @@ Proof.
       injection H0; intros; subst s.
       destruct s1.
       case_eq (NatMap.find enc v); intros.
+      case_eq (eqb r enc); intros.
+      apply cmp_to_eq in H8; subst enc.
+      unfold cachelet_deallocation in H6.
+      subst psi. case_eq (NatMap.find r V). intros.
+      assert (A0 := H2). destruct (NatMap.find r V) in A0, H6.
+      injection A0; intros; subst r2; clear A0.
+      apply (clear_remapping_list_v_eq r1 r F V C R c v w s) in H6.
+      assert (NatMap.find r v <> None).
+      intros contra; rewrite -> H7 in contra; discriminate.
+      apply NatMapFacts.in_find_iff in H8. apply H6 in H8. destruct H8.
+      exact H2.
+      discriminate.
+      intros; destruct (NatMap.find r V).
+      discriminate.
+      discriminate.
+      apply cmp_to_uneq in H8.
       apply (cachelet_deallocation_v r psi (single_level_cache c v w s) F V C R c v w s enc) in H6.
       assert (NatMap.find enc v <> None).
       intros contra; rewrite -> H7 in contra; discriminate.
-      apply NatMapFacts.in_find_iff in H8. apply H6 in H8.
+      apply NatMapFacts.in_find_iff in H9. apply H6 in H9.
       apply NatMapFacts.in_find_iff in H4. destruct H4.
-      exact H8. exact H2. reflexivity.
+      exact H9. exact H2. reflexivity. exact H8.
       destruct l.
       {
         apply (IHl root_node WFH1 (NatMap.add index (single_level_cache c v w s) k) k' index
@@ -3297,14 +3538,14 @@ Proof.
           apply H10. case_eq (NatMap.find e V); intros. apply (H7 e r1). exact H13.
           apply (clear_remapping_list_ranv r r0 F V C R c0 v w s e r1 ranV c).
           exact H27. exact H4. exact H13. exact H11. exact H12.
-          apply (clear_remapping_list_v r0 r F V C R c0 v w s e) in H27.
+          apply (clear_remapping_list_v_uneq r0 r F V C R c0 v w s e) in H27.
           assert (NatMap.find e v <> None).
           intros contra; rewrite -> H11 in contra; discriminate.
           apply NatMapFacts.in_find_iff in H14.
           apply H27 in H14.
           apply NatMapFacts.in_find_iff in H13. destruct H13.
           exact H14.
-          exact H4. exact H4.
+          exact H4. apply not_eq_sym; exact H5. exact H4.
           discriminate.
           discriminate.
           discriminate.
@@ -3351,14 +3592,14 @@ Proof.
           apply H10. case_eq (NatMap.find e V); intros. apply (H7 e r1). exact H13.
           apply (clear_remapping_list_ranv r r0 F V C R c0 v w s e r1 ranV c).
           exact H27. exact H4. exact H13. exact H11. exact H12.
-          apply (clear_remapping_list_v r0 r F V C R c0 v w s e) in H27.
+          apply (clear_remapping_list_v_uneq r0 r F V C R c0 v w s e) in H27.
           assert (NatMap.find e v <> None).
           intros contra; rewrite -> H11 in contra; discriminate.
           apply NatMapFacts.in_find_iff in H14.
           apply H27 in H14.
           apply NatMapFacts.in_find_iff in H13. destruct H13.
           exact H14.
-          exact H4. exact H4.
+          exact H4. apply not_eq_sym; exact H5. exact H4.
           discriminate.
           discriminate.
           discriminate.
@@ -3421,6 +3662,525 @@ Proof.
 Qed.
 
 (* WF2 MLC Allocation *)
+Lemma contains_cachelet_index_true : forall F c,
+  contains_cachelet_index c F = true ->
+  In c F.
+Proof.
+  intros F.
+  induction F.
+  { intros. unfold contains_cachelet_index in H; discriminate. }
+  {
+    intros.
+    unfold contains_cachelet_index in H.
+    fold contains_cachelet_index in H.
+    case_eq (eq_cachelet_index a c); intros. 
+     unfold eq_cachelet_index in H0;
+    destruct a; destruct c.
+    apply cmp_to_eq_and in H0. destruct H0. subst s0 w0.
+    apply in_eq; reflexivity.
+    assert (A0 := H0); destruct eq_cachelet_index in H, A0.
+    discriminate.
+    apply in_cons. apply (IHF c). exact H.
+  }
+Qed.
+
+Lemma way_first_allocation_f : forall F c,
+  way_first_allocation F = cachelet_index_defined c ->
+  In c F.
+Proof.
+  intros F c.
+  unfold way_first_allocation.
+  induction F.
+  { intros; unfold cachelet_min_way_ID in H; discriminate. }
+  {
+    intros.
+    destruct (cachelet_min_way_ID cachelet_index_none (a :: F)) in H.
+    case_eq (contains_cachelet_index c0 (a :: F)).
+    intros. assert (A0 := H0). destruct contains_cachelet_index in A0, H.
+    injection H; intros; subst.
+    apply contains_cachelet_index_true in H0. exact H0.
+    discriminate.
+    case_eq (contains_cachelet_index c0 (a :: F)).
+    intros. assert (A0 := H0). destruct contains_cachelet_index in A0, H.
+    discriminate. discriminate.
+    intros.
+    destruct contains_cachelet_index.
+    discriminate. discriminate. discriminate.
+  }
+Qed.
+
+Lemma cachelet_allocation_v : forall n r F V C R F' V' C' R' e,
+  cachelet_allocation n r (single_level_cache F V C R) = Some (single_level_cache F' V' C' R') ->
+  (NatMap.In e V <-> NatMap.In e V').
+Proof.
+  intros n r.
+  induction n.
+  {
+    intros.
+    unfold cachelet_allocation in H.
+    unfold recursive_cachelet_allocation in H.
+    injection H; intros; subst F' V' C' R'.
+    split; intros; exact H0.
+  }
+  {
+    intros.
+    unfold cachelet_allocation in H.
+    unfold recursive_cachelet_allocation in H.
+    fold recursive_cachelet_allocation in H.
+    destruct (way_first_allocation F). destruct c.
+    destruct (NatMap.find s R).
+    case_eq (NatMap.find (elt:=remapping_list) r V). intros.
+    assert (A0 := H0). destruct (NatMap.find (elt:=remapping_list) r V) in H, A0.
+    injection A0; intros; subst r1; clear A0.
+    case_eq (eqb e r); intros.
+    {
+      apply cmp_to_eq in H1; subst r.
+      assert (NatMap.In e V <-> NatMap.In e (NatMap.add e ((w, s) :: r0) V)).
+      split; intros.
+      apply NatMapFacts.add_in_iff; left; reflexivity.
+      assert (NatMap.find e V <> None).
+      intros contra; rewrite -> H0 in contra; discriminate.
+      apply NatMapFacts.in_find_iff in H2. exact H2.
+      apply (iff_trans (NatMap.In e V) (NatMap.In e (NatMap.add e ((w, s) :: r0) V))
+      (NatMap.In e V')). exact H1.
+      apply (IHn (remove_CAT (w, s) F) (NatMap.add e ((w, s) :: r0) V) C
+      (NatMap.add s (update p w (enclave_ID_active e)) R) F' V' C' R' e).
+      unfold cachelet_allocation; exact H.
+    }
+    {
+      apply cmp_to_uneq in H1.
+      assert (NatMap.In e V <-> NatMap.In e (NatMap.add r ((w, s) :: r0) V)).
+      split; intros.
+      apply NatMapFacts.add_in_iff; right; exact H2.
+      apply NatMapFacts.add_in_iff in H2. destruct H2.
+      subst. unfold not in H1. destruct H1. reflexivity.
+      exact H2.
+      apply (iff_trans (NatMap.In e V) (NatMap.In e (NatMap.add r ((w, s) :: r0) V))
+      (NatMap.In e V')). exact H2.
+      apply (IHn (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: r0) V) C
+      (NatMap.add s (update p w (enclave_ID_active r)) R) F' V' C' R' e).
+      unfold cachelet_allocation; exact H.
+    }
+    discriminate.
+    intros; destruct (NatMap.find r V).
+    discriminate.
+    discriminate.
+    discriminate.
+    discriminate.
+  }
+Qed.
+
+Lemma wf2_cachelet_allocation : forall n0 r F V C R F' V' C' R' enc ranV ranV' c,
+  cachelet_allocation n0 r (single_level_cache F V C R) = Some (single_level_cache F' V' C' R') ->
+  NatMap.find enc V = Some ranV ->
+  NatMap.find enc V' = Some ranV' ->
+  (In c ranV -> CacheletMap.In c C) ->
+  (In c F -> CacheletMap.In c C) ->
+  (In c ranV' -> CacheletMap.In c C').
+Proof.
+  intros n0 r.
+  unfold cachelet_allocation.
+  induction n0.
+  {
+    intros.
+    unfold recursive_cachelet_allocation in H.
+    injection H; intros; subst F' V' C' R'.
+    rewrite -> H0 in H1.
+    injection H1; intros; subst ranV'.
+    apply H2; exact H4.
+  }
+  {
+    intros.
+    unfold recursive_cachelet_allocation in H.
+    fold recursive_cachelet_allocation in H.
+    case_eq (way_first_allocation F). intros.
+    assert (A0 := H5). destruct (way_first_allocation F) in A0, H.
+    destruct c1.
+    case_eq (NatMap.find s R). intros.
+    assert (A1 := H6). destruct (NatMap.find s R) in A1, H.
+    case_eq (NatMap.find r V). intros.
+    assert (A2 := H7). destruct (NatMap.find r V) in A2, H.
+    injection A0; injection A1; injection A2; intros; subst p r1 c0; clear A0 A1 A2.
+    case_eq (eqb enc r); intros.
+    {
+      apply cmp_to_eq in H8; subst enc.
+      rewrite -> H0 in H7.
+      injection H7; intros; subst r0.
+      apply (IHn0 (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: ranV) V) C (NatMap.add s (update p0 w
+      (enclave_ID_active r)) R) F' V' C' R' r ((w, s) :: ranV) ranV' c).
+      exact H.
+      apply NatMapFacts.add_eq_o; reflexivity.
+      exact H1.
+      intros.
+      apply in_inv in H8; destruct H8. subst c.
+      apply H3.
+      apply way_first_allocation_f in H5. exact H5.
+      apply H2. exact H8.
+      intros. apply remove_CAT_f in H8. apply H3. exact H8.
+      exact H4.
+    }
+    {
+      apply cmp_to_uneq in H8.
+      apply (IHn0 (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: r0) V) C (NatMap.add s (update p0 w
+      (enclave_ID_active r)) R) F' V' C' R' enc ranV ranV' c).
+      exact H.
+      rewrite <- H0.
+      apply NatMapFacts.add_neq_o; apply not_eq_sym; exact H8.
+      exact H1. exact H2.
+      intros. apply remove_CAT_f in H9. apply H3. exact H9.
+      exact H4.
+    }
+    discriminate.
+    intros; destruct (NatMap.find r V).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find s R).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (way_first_allocation F).
+    discriminate.
+    discriminate.
+  }
+Qed.
+
+Lemma wf2_mlc_alloc : forall lambda h_tree n state k k' index psi psi' F V C R F' V' C' R' c enc ranV ranV',
+  well_defined_cache_tree h_tree ->
+  mlc_allocation n state k lambda h_tree = Some k' ->
+  NatMap.find index k = Some psi ->
+  NatMap.find index k' = Some psi' ->
+  psi = single_level_cache F V C R ->
+  psi' = single_level_cache F' V' C' R' ->
+  NatMap.find enc V = Some ranV ->
+  NatMap.find enc V' = Some ranV' ->
+  (In c ranV -> CacheletMap.In c C) ->
+  (In c F -> CacheletMap.In c C) ->
+  (In c ranV' -> CacheletMap.In c C').
+Proof.
+  unfold mlc_allocation.
+  intros lambda h_tree.
+  case_eq (get_cache_ID_path lambda h_tree).
+  intros l.
+  generalize dependent lambda.
+  induction l.
+  {
+    intros.
+    destruct state. destruct e.
+    unfold recursive_mlc_allocation in H1.
+    injection H1; intros; subst k' psi psi'.
+    rewrite -> H2 in H3.
+    injection H3; intros; subst.
+    rewrite -> H6 in H7.
+    injection H7; intros; subst.
+    apply H8; exact H10.
+    discriminate.
+  }
+  {
+    intros.
+    destruct state; destruct e.
+    unfold recursive_mlc_allocation in H1.
+    fold recursive_mlc_allocation in H1.
+    case_eq n.
+    intros. subst. discriminate.
+    intros. subst n.
+    case_eq (NatMap.find a k).
+    intros. assert (A0 := H11). destruct (NatMap.find a k) in H1, A0.
+    case_eq (cachelet_allocation n0 r s0).
+    intros. assert (A1 := H12). destruct (cachelet_allocation n0 r s0) in H1, A1.
+    injection A0; injection A1; intros; subst; clear A0 A1.
+    assert (WFH1 := H0).
+    unfold well_defined_cache_tree in WFH1.
+    destruct WFH1 as [ WFH1 WFH2 ]. destruct WFH2 as [ WFH2 WFH3 ]. destruct WFH3 as [ WFH3 WFH4 ].
+    case_eq (eqb index a).
+    {
+      intros. apply cmp_to_eq in H4.
+      subst a.
+      destruct s1.
+      destruct l.
+      {
+        case_eq (NatMap.find enc v); intros.
+        apply (IHl root_node WFH1 l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add index (single_level_cache c0 v w s0) k) k' index (single_level_cache c0 v w s0)
+        (single_level_cache F' V' C' R') c0 v w s0 F' V' C' R' c enc r0 ranV').
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        apply NatMapFacts.add_eq_o. reflexivity.
+        exact H3. reflexivity. reflexivity. exact H4. exact H7.
+        destruct s.
+        rewrite -> H2 in H11.
+        injection H11; intros; subst c1 v0 w0 s.
+        apply (wf2_cachelet_allocation n0 r F V C R c0 v w s0 enc ranV r0 c) in H12.
+        intros. exact H12. exact H6. exact H4. exact H8.
+        exact H9. exact H16.
+        {
+          destruct s. rewrite -> H11 in H2.
+          injection H2; intros; subst c1 v0 w0 s; clear H2.
+          assert (HF := H12); apply (cachelet_allocation_f n0 r (single_level_cache F V C R) (single_level_cache c0 v w s0)
+          F V C R c0 v w s0 c) in HF.
+          assert (HC := H12); apply (cachelet_allocation_c n0 r (single_level_cache F V C R) (single_level_cache c0 v w s0)
+          F V C R c0 v w s0) in HC. subst w.
+          apply H9 in HF. exact HF.
+          reflexivity.
+          reflexivity.
+          reflexivity.
+          reflexivity.
+          exact H16.
+        }
+        exact H10.
+        destruct s.
+        rewrite -> H2 in H11.
+        injection H11; intros; subst c1 v0 w0 s.
+        apply (cachelet_allocation_v n0 r F V C R c0 v w s0 enc) in H12.
+        assert (NatMap.find enc V <> None).
+        intros contra; rewrite -> H6 in contra; discriminate.
+        apply NatMapFacts.in_find_iff in H5.
+        apply H12 in H5.
+        apply NatMapFacts.in_find_iff in H5.
+        rewrite -> H4 in H5. unfold not in H5.
+        destruct H5. reflexivity.
+      }
+      {
+        destruct lambda.
+        rewrite -> WFH1 in H. discriminate.
+        specialize (WFH3 c1 index (p :: l) H).
+        unfold get_cache_ID_path in H. discriminate.
+        specialize (WFH2 p0 index (p :: l) H).
+        injection WFH2; intros; subst p0.
+        apply (WFH4 index p l) in H.
+        case_eq (NatMap.find enc v); intros.
+        apply (IHl (cache_node p) H l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add index (single_level_cache c0 v w s0) k) k' index (single_level_cache c0 v w s0)
+        (single_level_cache F' V' C' R') c0 v w s0 F' V' C' R' c enc r0 ranV').
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        apply NatMapFacts.add_eq_o. reflexivity.
+        exact H3. reflexivity. reflexivity. exact H4. exact H7.
+        destruct s.
+        rewrite -> H2 in H11.
+        injection H11; intros; subst c1 v0 w0 s.
+        apply (wf2_cachelet_allocation n0 r F V C R c0 v w s0 enc ranV r0 c) in H12.
+        intros. exact H12. exact H6. exact H4. exact H8.
+        exact H9. exact H16.
+        {
+          destruct s. rewrite -> H11 in H2.
+          injection H2; intros; subst c1 v0 w0 s; clear H2.
+          assert (HF := H12); apply (cachelet_allocation_f n0 r (single_level_cache F V C R) (single_level_cache c0 v w s0)
+          F V C R c0 v w s0 c) in HF.
+          assert (HC := H12); apply (cachelet_allocation_c n0 r (single_level_cache F V C R) (single_level_cache c0 v w s0)
+          F V C R c0 v w s0) in HC. subst w.
+          apply H9 in HF. exact HF.
+          reflexivity.
+          reflexivity.
+          reflexivity.
+          reflexivity.
+          exact H16.
+        }
+        exact H10.
+        destruct s.
+        rewrite -> H2 in H11.
+        injection H11; intros; subst c1 v0 w0 s.
+        apply (cachelet_allocation_v n0 r F V C R c0 v w s0 enc) in H12.
+        assert (NatMap.find enc V <> None).
+        intros contra; rewrite -> H6 in contra; discriminate.
+        apply NatMapFacts.in_find_iff in H5.
+        apply H12 in H5.
+        apply NatMapFacts.in_find_iff in H5.
+        rewrite -> H4 in H5. unfold not in H5.
+        destruct H5. reflexivity.
+      }
+    }
+    {
+      intros. apply cmp_to_uneq in H4.
+      destruct l.
+      {
+        apply (IHl root_node WFH1 l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add a s1 k) k' index (single_level_cache F V C R) (single_level_cache F' V' C' R')
+        F V C R F' V' C' R' c enc ranV ranV').
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        rewrite <- H2. apply NatMapFacts.add_neq_o.
+        apply not_eq_sym. exact H4.
+        exact H3. reflexivity. reflexivity. exact H6.
+        exact H7. exact H8. exact H9. exact H10.
+      }
+      {
+        destruct lambda.
+        rewrite -> WFH1 in H. discriminate.
+        specialize (WFH3 c0 a (p :: l) H).
+        unfold get_cache_ID_path in H. discriminate.
+        specialize (WFH2 p0 a (p :: l) H).
+        injection WFH2; intros; subst p0.
+        apply (WFH4 a p l) in H.
+        apply (IHl (cache_node p) H l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add a s1 k) k' index (single_level_cache F V C R) (single_level_cache F' V' C' R')
+        F V C R F' V' C' R' c enc ranV ranV').
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        rewrite <- H2. apply NatMapFacts.add_neq_o.
+        apply not_eq_sym. exact H4.
+        exact H3. reflexivity. reflexivity. exact H6.
+        exact H7. exact H8. exact H9. exact H10.
+      }
+    }
+    discriminate.
+    intros; destruct (cachelet_allocation n0 r s0).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find a k).
+    discriminate.
+    discriminate.
+    discriminate.
+  }
+  intros; destruct (get_cache_ID_path lambda h_tree).
+  discriminate.
+  destruct state; destruct e; discriminate.
+Qed.
+
+Lemma wf2_mlc_alloc_none : forall lambda h_tree n state k k' index psi psi' F V C R F' V' C' R' enc,
+  well_defined_cache_tree h_tree ->
+  mlc_allocation n state k lambda h_tree = Some k' ->
+  NatMap.find index k = Some psi ->
+  NatMap.find index k' = Some psi' ->
+  psi = single_level_cache F V C R ->
+  psi' = single_level_cache F' V' C' R' ->
+  NatMap.find enc V = None ->
+  NatMap.find enc V' = None.
+Proof.
+  unfold mlc_allocation.
+  intros lambda h_tree.
+  case_eq (get_cache_ID_path lambda h_tree).
+  intros l.
+  generalize dependent lambda.
+  induction l.
+  {
+    intros.
+    destruct state. destruct e.
+    unfold recursive_mlc_allocation in H1.
+    injection H1; intros; subst k' psi psi'.
+    rewrite -> H2 in H3.
+    injection H3; intros; subst.
+    exact H6.
+    discriminate.
+  }
+  {
+    intros.
+    destruct state; destruct e.
+    unfold recursive_mlc_allocation in H1.
+    fold recursive_mlc_allocation in H1.
+    case_eq n.
+    intros. subst. discriminate.
+    intros. subst n.
+    case_eq (NatMap.find a k).
+    intros. assert (A0 := H7). destruct (NatMap.find a k) in H1, A0.
+    case_eq (cachelet_allocation n0 r s0).
+    intros. assert (A1 := H8). destruct (cachelet_allocation n0 r s0) in H1, A1.
+    injection A0; injection A1; intros; subst; clear A0 A1.
+    assert (WFH1 := H0).
+    unfold well_defined_cache_tree in WFH1.
+    destruct WFH1 as [ WFH1 WFH2 ]. destruct WFH2 as [ WFH2 WFH3 ]. destruct WFH3 as [ WFH3 WFH4 ].
+    case_eq (eqb index a).
+    {
+      intros. apply cmp_to_eq in H4.
+      subst a.
+      destruct s1.
+      destruct l.
+      {
+        destruct s.
+        rewrite -> H2 in H7.
+        injection H7; intros; subst c0 v0 w0 s.
+        case_eq (NatMap.find enc v); intros.
+        apply (cachelet_allocation_v n0 r F V C R c v w s0 enc) in H8.
+        assert (NatMap.find enc v <> None).
+        intros contra; rewrite -> H4 in contra; discriminate.
+        apply NatMapFacts.in_find_iff in H5.
+        apply H8 in H5.
+        apply NatMapFacts.in_find_iff in H5.
+        rewrite -> H6 in H5. unfold not in H5.
+        destruct H5. reflexivity.
+        apply (IHl root_node WFH1 l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add index (single_level_cache c v w s0) k) k' index (single_level_cache c v w s0)
+        (single_level_cache F' V' C' R') c v w s0 F' V' C' R' enc).
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        apply NatMapFacts.add_eq_o. reflexivity.
+        exact H3. reflexivity. reflexivity. exact H4.
+      }
+      {
+        destruct lambda.
+        rewrite -> WFH1 in H. discriminate.
+        specialize (WFH3 c0 index (p :: l) H).
+        unfold get_cache_ID_path in H. discriminate.
+        specialize (WFH2 p0 index (p :: l) H).
+        injection WFH2; intros; subst p0.
+        apply (WFH4 index p l) in H.
+        destruct s.
+        rewrite -> H2 in H7.
+        injection H7; intros; subst c0 v0 w0 s.
+        case_eq (NatMap.find enc v); intros.
+        apply (cachelet_allocation_v n0 r F V C R c v w s0 enc) in H8.
+        assert (NatMap.find enc v <> None).
+        intros contra; rewrite -> H4 in contra; discriminate.
+        apply NatMapFacts.in_find_iff in H5.
+        apply H8 in H5.
+        apply NatMapFacts.in_find_iff in H5.
+        rewrite -> H6 in H5. unfold not in H5.
+        destruct H5. reflexivity.
+        apply (IHl (cache_node p) H l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add index (single_level_cache c v w s0) k) k' index (single_level_cache c v w s0)
+        (single_level_cache F' V' C' R') c v w s0 F' V' C' R' enc).
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        apply NatMapFacts.add_eq_o. reflexivity.
+        exact H3. reflexivity. reflexivity. exact H4.
+      }
+    }
+    {
+      intros. apply cmp_to_uneq in H4.
+      destruct l.
+      {
+        apply (IHl root_node WFH1 l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add a s1 k) k' index (single_level_cache F V C R) (single_level_cache F' V' C' R')
+        F V C R F' V' C' R' enc).
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        rewrite <- H2. apply NatMapFacts.add_neq_o.
+        apply not_eq_sym. exact H4.
+        exact H3. reflexivity. reflexivity. exact H6.
+      }
+      {
+        destruct lambda.
+        rewrite -> WFH1 in H. discriminate.
+        specialize (WFH3 c a (p :: l) H).
+        unfold get_cache_ID_path in H. discriminate.
+        specialize (WFH2 p0 a (p :: l) H).
+        injection WFH2; intros; subst p0.
+        apply (WFH4 a p l) in H.
+        apply (IHl (cache_node p) H l0 (enclave_state_value (enclave_ID_active r) (NatMap.empty enclave_memory_range_value))
+        (NatMap.add a s1 k) k' index (single_level_cache F V C R) (single_level_cache F' V' C' R')
+        F V C R F' V' C' R' enc).
+        exact H0.
+        unfold mlc_allocation. exact H1.
+        rewrite <- H2. apply NatMapFacts.add_neq_o.
+        apply not_eq_sym. exact H4.
+        exact H3. reflexivity. reflexivity. exact H6.
+      }
+    }
+    discriminate.
+    intros; destruct (cachelet_allocation n0 r s0).
+    discriminate.
+    discriminate.
+    discriminate.
+    intros; destruct (NatMap.find a k).
+    discriminate.
+    discriminate.
+    discriminate.
+  }
+  intros; destruct (get_cache_ID_path lambda h_tree).
+  discriminate.
+  destruct state; destruct e; discriminate.
+Qed.
 
 (* First Well-Formed Condition *)
 Lemma wf1_preservation : forall sigma obs sigma' obs',
@@ -3563,10 +4323,30 @@ Proof.
     apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H33.
     rewrite -> H33 in H2.
     discriminate. exact H22. exact H34.
-  - subst.
+  - case_eq (NatMap.find lambda m); intros; subst.
+    destruct s.
     unfold wf1 in WF1.
-    (* requires wf1 preservation first *) 
-    give_up.
+    assert (In c c0 -> CacheletMap.In c w).
+    apply (WF1 m mu rho p lambda c c0 v w s).
+    reflexivity. exact H40.
+    case_eq (NatMap.find e v); intros.
+    assert (In c r -> CacheletMap.In c w).
+    apply (H m mu rho p lambda c0 v w s c e r). reflexivity.
+    exact H40. exact H6.
+    apply (wf2_mlc_alloc lambda0 h_tree r_bar_val e0 m k lambda (single_level_cache c0 v w s)
+    (single_level_cache F V C R) c0 v w s F V C R c e r ranV).
+    exact H29. exact H39. exact H40. exact H2.
+    reflexivity. reflexivity.
+    exact H6. exact H3. exact H7. exact H5. exact H4.
+    assert (NatMap.find e V = None).
+    apply (wf2_mlc_alloc_none lambda0 h_tree r_bar_val e0 m k lambda (single_level_cache c0 v w s)
+    (single_level_cache F V C R) c0 v w s F V C R e).
+    exact H29. exact H39. exact H40. exact H2.
+    reflexivity. reflexivity. exact H6.
+    rewrite -> H7 in H3. discriminate.
+    apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val e0 m k lambda) in H39.
+    rewrite -> H39 in H2.
+    discriminate. exact H29. exact H40.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     case_eq (NatMap.find e v0); intros.
@@ -3615,4 +4395,4 @@ Proof.
     reflexivity. exact H2. exact H3. exact H4.
   - subst. apply (H k mu rho p lambda F V C R c e ranV).
     reflexivity. exact H2. exact H3. exact H4.
-Admitted.
+Qed.

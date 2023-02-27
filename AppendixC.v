@@ -18,14 +18,30 @@ Definition lt_way_ID (c1: nullable_cachelet_index) (c2: nullable_cachelet_index)
   | _, _ => c2
   end.
 
-Definition nullify_cachelet_index (c: cachelet_index): nullable_cachelet_index := cachelet_index_defined c.
-Definition nullify_cachelet_index_list (l: (list cachelet_index)): (list nullable_cachelet_index) :=
-  map (nullify_cachelet_index) l.
-
 (* Way First Allocation *)
-Definition cachelet_min_way_ID (l: (list cachelet_index)): nullable_cachelet_index :=
-  fold_right lt_way_ID cachelet_index_none (nullify_cachelet_index_list l).
-Definition way_first_allocation (F: CAT): nullable_cachelet_index := cachelet_min_way_ID F.
+Fixpoint cachelet_min_way_ID (min: nullable_cachelet_index) (l: list cachelet_index): nullable_cachelet_index :=
+  match l with
+  | nil => min
+  | a :: l' => cachelet_min_way_ID (lt_way_ID min (cachelet_index_defined a)) l'
+  end.
+Fixpoint contains_cachelet_index (c: cachelet_index) (F: CAT): bool :=
+  match F with
+  | nil => false
+  | x :: F' =>
+    match (eq_cachelet_index x c) with
+    | true => true
+    | false => contains_cachelet_index c F'
+    end
+  end.
+Definition way_first_allocation (F: CAT): nullable_cachelet_index :=
+  match (cachelet_min_way_ID cachelet_index_none F) with
+  | cachelet_index_none => cachelet_index_none
+  | (cachelet_index_defined c) =>
+    match (contains_cachelet_index c F) with
+    | true => (cachelet_index_defined c)
+    | false => cachelet_index_none
+    end
+  end.
 
 (* Cachelet Invalidation*)
 Definition cachelet_invalidation (C: way_set_cache) (ci: cachelet_index): option way_set_cache :=
@@ -198,7 +214,7 @@ Definition cachelet_allocation (n: nat) (e: raw_enclave_ID) (psi: single_level_c
 (* Cachelet Deallocation *)
 Fixpoint clear_remapping_list (e: raw_enclave_ID) (L: remapping_list) (F: CAT) (V: VPT) (C: way_set_cache) (R: set_indexed_PLRU): option single_level_cache_unit :=
   match L with
-  | nil => Some (single_level_cache F V C R)
+  | nil => Some (single_level_cache F (NatMap.remove e V) C R)
   | (w, s) :: L' =>
     match (NatMap.find s R) with
     | None => None
