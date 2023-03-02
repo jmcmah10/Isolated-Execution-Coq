@@ -200,7 +200,11 @@ Fixpoint recursive_cachelet_allocation (n: nat) (e: raw_enclave_ID) (F: CAT) (V:
       | Some T' => 
         match (NatMap.find e V) with
         | None => None
-        | Some L => recursive_cachelet_allocation n' e (remove_CAT (w, s) F) (NatMap.add e ((w, s) :: L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+        | Some L =>
+          match (remove_CAT (w, s) F) with
+          | None => None
+          | Some remF => recursive_cachelet_allocation n' e remF (NatMap.add e ((w, s) :: L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+          end
         end
       end
     end

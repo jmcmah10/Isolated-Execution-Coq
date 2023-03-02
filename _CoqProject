@@ -7,3 +7,4 @@
 ./MLCOperations.v
 ./Semantics.v
 ./WellFormed.v
+./WellFormed2.v

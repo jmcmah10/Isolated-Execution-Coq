@@ -22,66 +22,6 @@ Definition tree_in_PLRU (R: set_indexed_PLRU) T: Prop :=
 Notation "'<<' sigma ';' obs '>>'" := (state_and_trace sigma obs).
 
 (* Helper Lemmas *)
-Lemma cmp_to_eq : forall x y, (x =? y) = true -> x = y.
-Proof.
-  intro x.
-  induction x.
-  intros y H.
-  destruct y. reflexivity. simpl in *. congruence.
-  intros y H. destruct y.
-  simpl in *. congruence. f_equal ; auto.
-Qed.
-
-Lemma eq_to_cmp : forall x, x = x -> (x =? x) = true.
-Proof.
-  intros x.
-  induction x.
-  simpl. reflexivity.
-  simpl. intros. apply IHx. reflexivity.
-Qed.
-
-Lemma cmp_uneq_helper1 : forall n m : nat,
-    n <> m -> S n <> S m.
-Proof.
-  unfold not; intros.
-  apply H. injection H0. intro. assumption.
-Qed.
-Lemma cmp_uneq_helper2 : forall n m : nat,
-    S n <> S m -> n <> m.
-Proof.
-  unfold not; intros.
-  apply H. lia.
-Qed.
-Lemma cmp_to_uneq : forall x y, (x =? y) = false <-> x <> y.
-Proof.
-  induction x. split.
-  simpl. destruct y. discriminate. discriminate.
-  simpl. destruct y. intros. contradiction. intros. reflexivity.
-  simpl. destruct y.
-  split. intros. discriminate. intros. reflexivity.
-  split. intros. apply IHx in H. apply cmp_uneq_helper1. exact H.
-  intros. apply cmp_uneq_helper2 in H. apply IHx in H. exact H.
-Qed.
-
-Lemma cmp_to_eq_and : forall x y z w, (x =? y) && (z =? w) = true -> x = y /\ z = w.
-Proof.
-  intros.
-  apply andb_true_iff in H.
-  destruct H.
-  split.
-  apply cmp_to_eq; exact H.
-  apply cmp_to_eq; exact H0.
-Qed.
-
-Lemma cmp_to_uneq_and : forall x y z w, (x =? y) && (z =? w) = false -> x <> y \/ z <> w.
-Proof.
-  intros.
-  apply andb_false_iff in H.
-  destruct H.
-  left. apply cmp_to_uneq in H. exact H.
-  right. apply cmp_to_uneq in H. exact H.
-Qed.
-
 Lemma iff_trans : forall P Q R,
   (P <-> Q) -> (Q <-> R) -> (P <-> R).
 Proof.
@@ -528,9 +468,10 @@ Proof.
   destruct c0.
   case_eq (NatMap.find s R); intros; destruct (NatMap.find s R).
   case_eq (NatMap.find e V); intros; destruct (NatMap.find e V).
-  injection H0; injection H1; injection H2; intros; subst p r c; clear H0 H1 H2.
+  case_eq (remove_CAT (w, s) F); intros; destruct (remove_CAT (w, s) F).
+  injection H0; injection H1; injection H2; injection H3; intros; subst p r c c1; clear H0 H1 H2 H3.
   apply (IHn R' C' V' F' (NatMap.add s (update p0 w (enclave_ID_active e)) R) C
-  (NatMap.add e ((w, s) :: r0) V) (remove_CAT (w, s) F) e).
+  (NatMap.add e ((w, s) :: r0) V) c0 e).
   exact H.
   discriminate.
   discriminate.
@@ -541,91 +482,48 @@ Proof.
   discriminate.
   discriminate.
   discriminate.
-Qed.
-
-Lemma remove_CAT_f : forall c c' F,
-  In c (recursive_remove_from_CAT c' F) -> In c F.
-Proof.
-  intros.
-  unfold recursive_remove_from_CAT in H.
-  induction F. exact H.
-  case_eq (eq_cachelet_index c' a); intros; destruct (eq_cachelet_index c' a).
-  apply (in_cons a c F). exact H.
   discriminate.
   discriminate.
-  apply in_inv in H.
-  fold recursive_remove_from_CAT in *.
-  destruct H.
-  subst.
-  apply in_eq.
-  apply in_cons.
-  apply IHF.
-  exact H.
+  discriminate.
 Qed.
 
-Lemma remove_CAT_f2_helper : forall a c c' F,
-  (In c (recursive_remove_from_CAT c' F) \/ c = a) \/ c = c' ->
-  In c (a :: recursive_remove_from_CAT c' F) \/ c = c'.
+Lemma remove_CAT_f : forall c c' F remF,
+  remove_CAT c' F = Some remF -> In c remF -> In c F.
 Proof.
   intros.
-  destruct H.
-  destruct H.
-  left; apply in_cons; exact H.
-  left; subst; apply in_eq; reflexivity.
-  right; exact H.
+  unfold remove_CAT in H.
+  destruct (in_bool c' F).
+  injection H; intros; subst.
+  case_eq (eq_cachelet_index c c'); intros;
+  unfold eq_cachelet_index in H0;
+  destruct c; destruct c'.
+  apply cmp_to_eq_and in H1. destruct H1. subst w0 s0.
+  apply remove_In in H0. destruct H0.
+  apply cmp_to_uneq_and in H1. destruct H1.
+  apply in_remove in H0. destruct H0. exact H0.
+  apply in_remove in H0. destruct H0. exact H0.
+  discriminate.
 Qed.
 
-Lemma remove_CAT_f2_helper2 : forall P Q R,
-  (P \/ Q) \/ R -> (P \/ R) \/ Q.
+Lemma remove_CAT_f2 : forall c c' F remF,
+  In c F -> remove_CAT c' F = Some remF -> In c remF \/ c = c'.
 Proof.
   intros.
-  destruct H.
-  destruct H.
-  left; left; exact H.
-  right; exact H.
-  left; right; exact H.
-Qed.
-
-Lemma remove_CAT_f2 : forall c c' F,
-  In c F -> In c (recursive_remove_from_CAT c' F) \/ c = c'.
-Proof.
-  intros.
-  induction F.
-  simpl in H. left. simpl. exact H.
-  unfold recursive_remove_from_CAT.
-  case_eq (eq_cachelet_index c' a); intros; destruct (eq_cachelet_index c' a) in IHF.
-  apply in_inv in H.
-  destruct H.
-  subst.
-  unfold eq_cachelet_index in H0.
-  destruct c'. destruct c.
-  apply cmp_to_eq_and in H0.
-  destruct H0. subst. right. auto.
-  left. auto.
-  apply in_inv in H.
-  destruct H.
-  subst.
-  unfold eq_cachelet_index in H0.
-  destruct c'. destruct c.
-  apply cmp_to_eq_and in H0.
-  destruct H0. subst. right. auto.
-  left. auto.
-  fold recursive_remove_from_CAT.
-  apply in_inv in H. destruct H.
-  destruct a; destruct c; destruct c'.
-  injection H; intros; subst w0 s0.
-  left. apply in_eq.
-  apply remove_CAT_f2_helper.
-  apply remove_CAT_f2_helper2.
-  left. apply IHF. exact H.
-  fold recursive_remove_from_CAT.
-  apply in_inv in H. destruct H.
-  destruct a; destruct c; destruct c'.
-  injection H; intros; subst w0 s0.
-  left. apply in_eq.
-  apply remove_CAT_f2_helper.
-  apply remove_CAT_f2_helper2.
-  left. apply IHF. exact H.
+  case_eq (eq_cachelet_index c c'); intros;
+  destruct c; destruct c';
+  unfold eq_cachelet_index in H1.
+  apply cmp_to_eq_and in H1; destruct H1; subst w0 s0.
+  right; reflexivity.
+  unfold remove_CAT in H0. destruct (in_bool (w0, s0) F).
+  injection H0; intros; subst.
+  apply cmp_to_uneq_and in H1; destruct H1.
+  left. apply in_in_remove. intros contra.
+  injection contra; intros; subst w0 s0. assert (w = w).
+  reflexivity. apply H1 in H2. destruct H2. exact H.
+  left. apply in_in_remove. intros contra.
+  injection contra; intros; subst w0 s0. assert (s = s).
+  reflexivity. apply H1 in H2. destruct H2. exact H.
+  discriminate.
 Qed.
 
 Lemma cachelet_allocation_f : forall n e psi psi' F V C R F' V' C' R' c,
@@ -649,20 +547,23 @@ Proof.
   destruct c1.
   case_eq (NatMap.find s R); intros; destruct (NatMap.find s R).
   case_eq (NatMap.find e V); intros; destruct (NatMap.find e V).
+  case_eq (remove_CAT (w, s) F); intros.
+  assert (A0 := H5); destruct (remove_CAT (w, s) F) in H, A0.
   fold recursive_cachelet_allocation in H.
-  injection H3; injection H4; injection H0; intros;
-  subst p r c0; clear H3 H4 H0.
-  specialize (IHn e (single_level_cache (remove_CAT (w, s) F) (NatMap.add e ((w, s) :: r0) V)
-  C (NatMap.add s (update p0 w (enclave_ID_active e)) R)) psi' (remove_CAT (w, s) F)
+  injection H3; injection H4; injection A0; injection H0; intros;
+  subst p r c0 c2; clear H3 H4 A0 H0.
+  specialize (IHn e (single_level_cache c1 (NatMap.add e ((w, s) :: r0) V)
+  C (NatMap.add s (update p0 w (enclave_ID_active e)) R)) psi' c1
   (NatMap.add e ((w, s) :: r0) V) C (NatMap.add s (update p0 w (enclave_ID_active e)) R)
   F' V' C' R' c) as H_app.
-  apply (remove_CAT_f c (w, s) F).
-  unfold remove_CAT in H_app.
+  apply (remove_CAT_f c (w, s) F c1). exact H5.
   apply H_app.
   unfold cachelet_allocation; exact H.
   reflexivity.
   exact H1.
   exact H2.
+  discriminate.
+  destruct (remove_CAT (w, s) F); discriminate.
   discriminate.
   discriminate.
   discriminate.
@@ -3743,9 +3644,11 @@ Proof.
       apply NatMapFacts.in_find_iff in H2. exact H2.
       apply (iff_trans (NatMap.In e V) (NatMap.In e (NatMap.add e ((w, s) :: r0) V))
       (NatMap.In e V')). exact H1.
-      apply (IHn (remove_CAT (w, s) F) (NatMap.add e ((w, s) :: r0) V) C
+      destruct (remove_CAT (w, s) F).
+      apply (IHn c (NatMap.add e ((w, s) :: r0) V) C
       (NatMap.add s (update p w (enclave_ID_active e)) R) F' V' C' R' e).
       unfold cachelet_allocation; exact H.
+      discriminate.
     }
     {
       apply cmp_to_uneq in H1.
@@ -3757,9 +3660,11 @@ Proof.
       exact H2.
       apply (iff_trans (NatMap.In e V) (NatMap.In e (NatMap.add r ((w, s) :: r0) V))
       (NatMap.In e V')). exact H2.
-      apply (IHn (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: r0) V) C
+      destruct (remove_CAT (w, s) F).
+      apply (IHn c (NatMap.add r ((w, s) :: r0) V) C
       (NatMap.add s (update p w (enclave_ID_active r)) R) F' V' C' R' e).
       unfold cachelet_allocation; exact H.
+      discriminate.
     }
     discriminate.
     intros; destruct (NatMap.find r V).
@@ -3800,13 +3705,15 @@ Proof.
     assert (A1 := H6). destruct (NatMap.find s R) in A1, H.
     case_eq (NatMap.find r V). intros.
     assert (A2 := H7). destruct (NatMap.find r V) in A2, H.
-    injection A0; injection A1; injection A2; intros; subst p r1 c0; clear A0 A1 A2.
+    case_eq (remove_CAT (w, s) F). intros c1 V0.
+    assert (A3 := V0). destruct (remove_CAT (w, s) F) in A3, H.
+    injection A0; injection A1; injection A2; injection A3; intros; subst p r1 c0 c2; clear A0 A1 A2 A3.
     case_eq (eqb enc r); intros.
     {
       apply cmp_to_eq in H8; subst enc.
       rewrite -> H0 in H7.
       injection H7; intros; subst r0.
-      apply (IHn0 (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: ranV) V) C (NatMap.add s (update p0 w
+      apply (IHn0 c1 (NatMap.add r ((w, s) :: ranV) V) C (NatMap.add s (update p0 w
       (enclave_ID_active r)) R) F' V' C' R' r ((w, s) :: ranV) ranV' c).
       exact H.
       apply NatMapFacts.add_eq_o; reflexivity.
@@ -3816,20 +3723,24 @@ Proof.
       apply H3.
       apply way_first_allocation_f in H5. exact H5.
       apply H2. exact H8.
-      intros. apply remove_CAT_f in H8. apply H3. exact H8.
-      exact H4.
+      intros. apply (remove_CAT_f c (w, s) F c1) in H8. apply H3. exact H8.
+      exact V0. exact H4.
     }
     {
       apply cmp_to_uneq in H8.
-      apply (IHn0 (remove_CAT (w, s) F) (NatMap.add r ((w, s) :: r0) V) C (NatMap.add s (update p0 w
+      apply (IHn0 c1 (NatMap.add r ((w, s) :: r0) V) C (NatMap.add s (update p0 w
       (enclave_ID_active r)) R) F' V' C' R' enc ranV ranV' c).
       exact H.
       rewrite <- H0.
       apply NatMapFacts.add_neq_o; apply not_eq_sym; exact H8.
       exact H1. exact H2.
-      intros. apply remove_CAT_f in H9. apply H3. exact H9.
-      exact H4.
+      intros. apply (remove_CAT_f c (w, s) F c1) in H9. apply H3. exact H9.
+      exact V0. exact H4.
     }
+    discriminate.
+    intros; destruct (remove_CAT (w, s) F).
+    discriminate.
+    discriminate.
     discriminate.
     intros; destruct (NatMap.find r V).
     discriminate.
