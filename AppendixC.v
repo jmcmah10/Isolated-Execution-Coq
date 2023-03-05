@@ -197,21 +197,25 @@ Fixpoint recursive_cachelet_allocation (n: nat) (e: raw_enclave_ID) (F: CAT) (V:
     | cachelet_index_defined (w, s) =>
       match (NatMap.find s R) with
       | None => None
-      | Some T' => 
-        match (NatMap.find e V) with
+      | Some T' =>
+        match (remove_CAT (w, s) F) with
         | None => None
-        | Some L =>
-          match (remove_CAT (w, s) F) with
-          | None => None
-          | Some remF => recursive_cachelet_allocation n' e remF (NatMap.add e ((w, s) :: L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+        | Some remF =>
+          match (NatMap.find e V) with
+          | None => recursive_cachelet_allocation n' e remF (NatMap.add e ((w, s) :: nil) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
+          | Some L => recursive_cachelet_allocation n' e remF (NatMap.add e ((w, s) :: L) V) C (NatMap.add s (update T' w (enclave_ID_active e)) R)
           end
         end
       end
     end
   end.
 Definition cachelet_allocation (n: nat) (e: raw_enclave_ID) (psi: single_level_cache_unit): option single_level_cache_unit := 
-  match psi with
-  | single_level_cache F V C R => recursive_cachelet_allocation n e F V C R
+  match n with
+  | 0 => None
+  | S _ =>
+    match psi with
+    | single_level_cache F V C R => recursive_cachelet_allocation n e F V C R
+    end
   end.
 
 

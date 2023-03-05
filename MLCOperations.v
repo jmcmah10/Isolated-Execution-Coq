@@ -94,7 +94,11 @@ Definition mlc_deallocation (state: enclave_state) (k: multi_level_cache) (lambd
     | enclave_ID_inactive => None
     | enclave_ID_active e => 
       match (get_cache_ID_path lambda h_tree) with
-      | Some L => recursive_mlc_deallocation e k L
+      | Some L =>
+        match L with
+        | nil => None
+        | _ => recursive_mlc_deallocation e k L
+        end
       | None => None
       end
     end
@@ -170,7 +174,11 @@ Definition mlc_allocation (n: (list nat)) (state: enclave_state) (k: multi_level
     | enclave_ID_inactive => None
     | enclave_ID_active e =>
       match (get_cache_ID_path lambda h_tree) with
-      | Some L => recursive_mlc_allocation n e k L
+      | Some L =>
+        match L with
+        | nil => None
+        | _ => recursive_mlc_allocation n e k L
+        end
       | None => None
       end
     end
