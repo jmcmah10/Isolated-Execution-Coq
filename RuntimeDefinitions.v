@@ -17,6 +17,9 @@ Module NatMapProperties := WProperties_fun Nat_as_OT NatMap.
 Module PairMapProperties := WProperties_fun OrderedPair PairMap.
 Module CacheletMapProperties := PairMapProperties.
 
+Module NatMapFacts := NatMapProperties.F.
+Module CacheletMapFacts := CacheletMapProperties.F.
+
 
 (* Identifiers and Atomic Values *)
 Definition core_ID := nat.

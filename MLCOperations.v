@@ -87,21 +87,14 @@ Fixpoint recursive_mlc_deallocation (e: raw_enclave_ID) (k: multi_level_cache) (
       end
     end
   end.
-Definition mlc_deallocation (state: enclave_state) (k: multi_level_cache) (lambda: cache_tree_node) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
-  match state with
-  | enclave_state_value e_id _ =>
-    match e_id with
-    | enclave_ID_inactive => None
-    | enclave_ID_active e => 
-      match (get_cache_ID_path lambda h_tree) with
-      | Some L =>
-        match L with
-        | nil => None
-        | _ => recursive_mlc_deallocation e k L
-        end
-      | None => None
-      end
+Definition mlc_deallocation (e: raw_enclave_ID) (k: multi_level_cache) (lambda: cache_tree_node) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
+  match (get_cache_ID_path lambda h_tree) with
+  | Some L =>
+    match L with
+    | nil => None
+    | _ => recursive_mlc_deallocation e k L
     end
+  | None => None
   end.
 
 (* MLC Write *)
@@ -167,21 +160,14 @@ Fixpoint recursive_mlc_allocation (n: (list nat)) (e: raw_enclave_ID) (k: multi_
       end
     end
   end.
-Definition mlc_allocation (n: (list nat)) (state: enclave_state) (k: multi_level_cache) (lambda: cache_tree_node) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
-  match state with
-  | enclave_state_value e_id _ =>
-    match e_id with
-    | enclave_ID_inactive => None
-    | enclave_ID_active e =>
-      match (get_cache_ID_path lambda h_tree) with
-      | Some L =>
-        match L with
-        | nil => None
-        | _ => recursive_mlc_allocation n e k L
-        end
-      | None => None
-      end
+Definition mlc_allocation (n: (list nat)) (e: raw_enclave_ID) (k: multi_level_cache) (lambda: cache_tree_node) (h_tree: cache_hierarchy_tree): option multi_level_cache :=
+  match (get_cache_ID_path lambda h_tree) with
+  | Some L =>
+    match L with
+    | nil => None
+    | _ => recursive_mlc_allocation n e k L
     end
+  | None => None
   end.
 
 (* MLC Read *)
