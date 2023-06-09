@@ -178,8 +178,8 @@ Proof.
     apply NatMapFacts.add_neq_o; exact H3.
   - destruct e; destruct e'.
     assert (forall e, n = e \/ NatMap.In e e1 <-> NatMap.In e e3).
-    apply (enclave_creation_mem e e1 mu n r_val2_addr r_val3 e2 e3 H37).
-    apply enclave_creation_id in H37. subst.
+    apply (enclave_creation_mem e e1 mu n r_val2_addr r_val3 e2 e3 H38).
+    apply enclave_creation_id in H38. subst.
     case_eq (eqb p0 p1); intros.
     apply cmp_to_eq in H4; subst.
     assert (Some (process_value (enclave_state_value e0 E) l q) =
@@ -212,9 +212,9 @@ Proof.
     apply NatMapFacts.add_neq_o; exact H3.
   - destruct e; destruct e'.
     assert (forall e, NatMap.In e e1 <-> NatMap.In e e3 \/ r_val = e).
-    apply (enclave_elimination_mem e e1 r_val e2 e3 H35).
-    assert (H36 := H35).
-    apply enclave_elimination_id in H35. subst.
+    apply (enclave_elimination_mem e e1 r_val e2 e3 H36).
+    assert (H37 := H36).
+    apply enclave_elimination_id in H36. subst.
     case_eq (eqb p0 p1); intros.
     apply cmp_to_eq in H4; subst.
     assert (Some (process_value (enclave_state_value e0 E) l q) =
@@ -232,18 +232,18 @@ Proof.
     apply H5. reflexivity. apply H3 in H7.
     destruct H7. exact H7. subst.
     apply (enclave_elimination_neq (enclave_ID_active e) e1 e
-    (enclave_ID_active e) e3 e) in H36.
-    destruct H36; reflexivity. reflexivity.
+    (enclave_ID_active e) e3 e) in H37.
+    destruct H37; reflexivity. reflexivity.
     left; reflexivity.
     apply cmp_to_uneq in H4.
     apply (H m m0 rho p p1 l q e0 E).
     reflexivity. rewrite <- H2. apply eq_sym.
     apply NatMapFacts.add_neq_o; exact H4.
   - destruct e'; destruct e.
-    unfold active_enclave_update in H32.
+    unfold active_enclave_update in H33.
     case_eq (NatMap.find r_val e3); intros.
-    assert (A0 := H3); destruct (NatMap.find r_val e3) in A0, H32.
-    injection A0; injection H32; intros; subst; clear A0.
+    assert (A0 := H3); destruct (NatMap.find r_val e3) in A0, H33.
+    injection A0; injection H33; intros; subst; clear A0.
     assert (NatMap.In r_val e2).
     apply NatMapFacts.in_find_iff.
     intros contra; rewrite -> H3 in contra; discriminate.
@@ -261,8 +261,8 @@ Proof.
     discriminate.
     destruct (NatMap.find r_val e3); discriminate.
   - destruct e'; destruct e.
-    unfold active_enclave_update in H31.
-    injection H31; intros; subst.
+    unfold active_enclave_update in H32.
+    injection H32; intros; subst.
     case_eq (eqb p0 p1); intros.
     apply cmp_to_eq in H3; subst.
     assert (Some (process_value (enclave_state_value e0 E) l q) =
@@ -314,15 +314,11 @@ Proof.
     apply NatMapFacts.add_neq_o; exact H3.
 Qed.
 
-(* Disjoint Enclave States *)
-Definition disjoint_enclave_states (sigma: runtime_state): Prop :=
-  forall k mu rho pi p l q e0 E p' l' q' e0' E',
-  (sigma = runtime_state_value k mu rho pi) ->
-  (NatMap.find p pi = Some (process_value (enclave_state_value e0 E) l q)) ->
-  (NatMap.find p' pi = Some (process_value (enclave_state_value e0' E') l' q')) ->
-  p <> p' -> ((forall e, NatMap.In e E -> ~NatMap.In e E') /\
-  (forall e, NatMap.In e E' -> ~NatMap.In e E)).
+(* Well-Formed Enclave State *)
+Definition wf_enclave_state (sigma: runtime_state): Prop :=
+  (active_enclave_contained sigma).
 
+(*
 Lemma disjoint_enclave_states_preservation : forall sigma obs sigma' obs',
   disjoint_enclave_states sigma -> <<sigma; obs>> ===> <<sigma'; obs'>>
   -> disjoint_enclave_states sigma'.
@@ -564,3 +560,4 @@ Proof.
     rewrite <- H3. apply eq_sym. apply NatMapFacts.add_neq_o. exact H6.
     exact H4.
 Admitted.
+*)

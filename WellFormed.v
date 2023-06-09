@@ -4501,8 +4501,8 @@ Proof.
     generalize H3.
     apply (wf1_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c).
-    exact H21.
-    exact H32.
+    exact H22.
+    exact H33.
     exact H1.
     exact H2.
     reflexivity.
@@ -4511,8 +4511,8 @@ Proof.
     apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H1.
     rewrite -> H2 in H1.
     discriminate.
-    exact H21.
-    exact H32.
+    exact H22.
+    exact H33.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     assert (In c c0 -> CacheletMap.In c w).
@@ -4521,8 +4521,8 @@ Proof.
     generalize H3.
     apply (wf1_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c).
-    exact H28.
-    exact H38.
+    exact H29.
+    exact H39.
     exact H1.
     exact H2.
     reflexivity.
@@ -4535,9 +4535,9 @@ Proof.
     intros.
     rewrite -> H2 in H4.
     discriminate.
-    exact H28.
-    exact H38.
-    exact H38.
+    exact H29.
+    exact H39.
+    exact H39.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     assert (In c c0 -> CacheletMap.In c w).
@@ -4546,8 +4546,8 @@ Proof.
     generalize H3.
     apply (wf1_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c0 v0 w s)
     (single_level_cache F V C R) c0 v0 w s F V C R c).
-    exact H21.
-    exact H32.
+    exact H22.
+    exact H33.
     exact H1.
     exact H2.
     reflexivity.
@@ -4556,8 +4556,8 @@ Proof.
     apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H1.
     rewrite -> H2 in H1.
     discriminate.
-    exact H21.
-    exact H32.
+    exact H22.
+    exact H33.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     unfold wf2 in WF2.
@@ -4570,17 +4570,17 @@ Proof.
     generalize H3.
     apply (wf1_mlc_dealloc lambda0 h_tree r_val m k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c).
-    exact H25.
-    exact H33.
+    exact H26.
+    exact H34.
     exact H1.
     exact H2.
     reflexivity.
     reflexivity.
     exact H5.
     exact H4.
-    apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H33.
-    rewrite -> H2 in H33. discriminate.
-    exact H25.
+    apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H34.
+    rewrite -> H2 in H34. discriminate.
+    exact H26.
     exact H1.
   - apply (H k mu rho p lambda c F V C R).
     auto. rewrite -> H2. reflexivity. exact H3.
@@ -4609,119 +4609,119 @@ Proof.
     case_eq (NatMap.find e v); intros.
     assert (In c r -> CacheletMap.In c w).
     apply (H m mu rho p lambda c0 v w s c e r). reflexivity.
-    exact H35. exact H5.
+    exact H36. exact H5.
     apply (wf2_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c e r ranV).
-    exact H23. exact H34. exact H35. exact H2.
+    exact H24. exact H35. exact H36. exact H2.
     reflexivity. reflexivity.
     exact H5. exact H3. exact H6. exact H4.
     assert (NatMap.find e V = None).
     apply (wf2_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R e).
-    exact H23. exact H34. exact H35. exact H2.
+    exact H24. exact H35. exact H36. exact H2.
     reflexivity. reflexivity. exact H5.
     rewrite -> H6 in H3. discriminate.
-    apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H34.
-    rewrite -> H34 in H2.
-    discriminate. exact H23. exact H35.
+    apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H35.
+    rewrite -> H35 in H2.
+    discriminate. exact H24. exact H36.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     unfold wf1 in WF1.
     assert (In c c0 -> CacheletMap.In c w).
     apply (WF1 m mu rho p lambda c c0 v w s).
-    reflexivity. exact H41.
+    reflexivity. exact H42.
     case_eq (NatMap.find e v); intros.
     assert (In c r -> CacheletMap.In c w).
     apply (H m mu rho p lambda c0 v w s c e r). reflexivity.
-    exact H41. exact H6.
+    exact H42. exact H6.
     apply (wf2_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c e r ranV).
-    exact H30. exact H40. exact H41. exact H2.
+    exact H31. exact H41. exact H42. exact H2.
     reflexivity. reflexivity.
     exact H6. exact H3. exact H7. exact H5. exact H4.
     destruct e0. destruct e0.
     case_eq (eqb e n); intros.
     apply cmp_to_eq in H7; subst e.
     destruct e'. destruct e.
-    apply enclave_creation_id in H39. subst.
-    injection H39; intros; subst.
+    apply enclave_creation_id in H40. subst.
+    injection H40; intros; subst.
     apply (wf2_mlc_alloc_eq lambda0 h_tree r_bar_val n m k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c ranV).
-    exact H30. exact H40. exact H41. exact H2.
+    exact H31. exact H41. exact H42. exact H2.
     reflexivity. reflexivity.
     left; exact H6. exact H3. exact H5. exact H4.
-    apply enclave_creation_id in H39; discriminate.
+    apply enclave_creation_id in H40; discriminate.
     apply cmp_to_uneq in H7.
     assert (NatMap.find e V = None).
     destruct e'.
-    apply enclave_creation_id in H39; destruct e0.
-    subst. injection H39; intros; subst.
+    apply enclave_creation_id in H40; destruct e0.
+    subst. injection H40; intros; subst.
     apply (wf2_mlc_alloc_none lambda0 h_tree r_bar_val n m k
     lambda (single_level_cache c0 v w s) (single_level_cache F V C R) c0 v w s F V C R e).
-    exact H30. exact H40. exact H41. exact H2.
+    exact H31. exact H41. exact H42. exact H2.
     reflexivity. reflexivity. exact H7. exact H6.
-    unfold mlc_allocation in H40; discriminate.
+    unfold mlc_allocation in H41; discriminate.
     rewrite -> H8 in H3. discriminate.
     case_eq (eqb e n); intros.
     apply cmp_to_eq in H7; subst e.
     destruct e'. destruct e.
-    apply enclave_creation_id in H39. subst. discriminate.
+    apply enclave_creation_id in H40. subst. discriminate.
     apply (wf2_mlc_alloc_eq lambda0 h_tree r_bar_val n m k lambda (single_level_cache c0 v w s)
     (single_level_cache F V C R) c0 v w s F V C R c ranV).
-    exact H30. exact H40. exact H41. exact H2.
+    exact H31. exact H41. exact H42. exact H2.
     reflexivity. reflexivity.
     left; exact H6. exact H3. exact H5. exact H4.
     apply cmp_to_uneq in H7.
     assert (NatMap.find e V = None).
     destruct e'.
-    apply enclave_creation_id in H39; destruct e0.
+    apply enclave_creation_id in H40; destruct e0.
     subst. discriminate.
     apply (wf2_mlc_alloc_none lambda0 h_tree r_bar_val n m k
     lambda (single_level_cache c0 v w s) (single_level_cache F V C R) c0 v w s F V C R e).
-    exact H30. exact H40. exact H41. exact H2.
+    exact H31. exact H41. exact H42. exact H2.
     reflexivity. reflexivity. exact H7. exact H6.
     rewrite -> H8 in H3. discriminate.
-    apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H41.
-    rewrite -> H41 in H2.
-    discriminate. exact H30. exact H40.
+    apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H42.
+    rewrite -> H42 in H2.
+    discriminate. exact H31. exact H41.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     case_eq (NatMap.find e v0); intros.
     assert (In c r -> CacheletMap.In c w).
     apply (H m m0 rho p lambda c0 v0 w s c e r). reflexivity.
-    exact H35. exact H5.
+    exact H36. exact H5.
     apply (wf2_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c0 v0 w s)
     (single_level_cache F V C R) c0 v0 w s F V C R c e r ranV).
-    exact H23. exact H34. exact H35. exact H2.
+    exact H24. exact H35. exact H36. exact H2.
     reflexivity. reflexivity.
     exact H5. exact H3. exact H6. exact H4.
     assert (NatMap.find e V = None).
     apply (wf2_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c0 v0 w s)
     (single_level_cache F V C R) c0 v0 w s F V C R).
-    exact H23. exact H34. exact H35. exact H2. reflexivity. reflexivity. exact H5.
+    exact H24. exact H35. exact H36. exact H2. reflexivity. reflexivity. exact H5.
     rewrite -> H6 in H3. discriminate.
-    apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H34.
-    rewrite -> H34 in H2.
-    discriminate. exact H23. exact H35.
+    apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H35.
+    rewrite -> H35 in H2.
+    discriminate. exact H24. exact H36.
   - case_eq (NatMap.find lambda m); intros; subst.
     destruct s.
     case_eq (NatMap.find e v); intros.
     assert (In c r -> CacheletMap.In c w).
     apply (H m m0 rho p lambda c0 v w s c e r). reflexivity.
-    exact H38. exact H5.
+    exact H39. exact H5.
     apply (wf2_mlc_dealloc lambda0 h_tree r_val m k lambda
     (single_level_cache c0 v w s) (single_level_cache F V C R) c0 v w s F V C R c e r ranV).
-    exact H27. exact H35. exact H38. exact H2. reflexivity. reflexivity.
+    exact H28. exact H36. exact H39. exact H2. reflexivity. reflexivity.
     exact H5. exact H3. exact H6. exact H4.
     assert (NatMap.find e V = None).
     apply (wf2_mlc_dealloc_none lambda0 h_tree r_val m k lambda
     (single_level_cache c0 v w s) (single_level_cache F V C R) c0 v w s F V C R e) in H5.
-    exact H5. exact H27. exact H35. exact H38. exact H2. reflexivity. reflexivity.
+    exact H5. exact H28. exact H36. exact H39. exact H2. reflexivity. reflexivity.
     rewrite -> H6 in H3.
     discriminate.
-    apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H35.
-    rewrite -> H2 in H35. discriminate.
-    exact H27. exact H38.
+    apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H36.
+    rewrite -> H2 in H36. discriminate.
+    exact H28. exact H39.
   - subst. apply (H k mu rho p lambda F V C R c e ranV).
     reflexivity. exact H2. exact H3. exact H4.
   - subst. apply (H k mu rho p lambda F V C R c e ranV).

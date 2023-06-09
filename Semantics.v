@@ -4,6 +4,15 @@ Require Import MLCOperations.
 Require Import AppendixF.
 Require Import AppendixE.
 
+(* Disjoint Enclave States *)
+Definition disjoint_enclave_states (sigma: runtime_state): Prop :=
+  forall k mu rho pi p l q e0 E p' l' q' e0' E',
+  (sigma = runtime_state_value k mu rho pi) ->
+  (NatMap.find p pi = Some (process_value (enclave_state_value e0 E) l q)) ->
+  (NatMap.find p' pi = Some (process_value (enclave_state_value e0' E') l' q')) ->
+  p <> p' -> ((forall e, NatMap.In e E -> ~NatMap.In e E') /\
+  (forall e, NatMap.In e E' -> ~NatMap.In e E)).
+
 (* Single-process State *)
 Inductive single_process_state : Type :=
 | process_state_value : multi_level_cache -> memory -> registers -> enclave_state -> single_process_state.
@@ -85,6 +94,7 @@ Inductive multi_sem : semantic_state -> semantic_state -> Prop :=
     (NatMap.find p pi) = Some (process_value e l q) ->
     add_to_memory_address mu l n = Some l' ->
     (exists i', memory_read mu' l' = Some (memory_value_instruction i')) ->
+    disjoint_enclave_states (runtime_state_value k mu rho pi) ->
     <<k, mu, rho, pi | obs_p>> ===> <<k', mu', rho', (NatMap.add p (process_value e' l' q) pi) | (obs_p ++ (to_p_trace p obs)) >>
 | ContextSwitch : forall k mu rho pi q q' p e l obs,
     (NatMap.find p pi) = Some (process_value e l q) ->

@@ -13,7 +13,7 @@ Require Import AppendixE.
 Require Import Semantics.
 Require Import MLCOperations.
 Require Import WellFormed.
-(* Require Import WellFormed2. *)
+Require Import WellFormed2.
 
 Module NatMapFacts := NatMapProperties.F.
 Module CacheletMapFacts := CacheletMapProperties.F.
@@ -855,45 +855,45 @@ Proof.
     destruct s0.
     apply (wf7_1_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_1_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H28. exact H38. exact H3. exact H2.
+    exact H29. exact H39. exact H3. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H3.
-    intros H3. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H38.
-    rewrite -> H38 in H2.
-    discriminate. exact H28. exact H3.
+    intros H3. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H39.
+    rewrite -> H39 in H2.
+    discriminate. exact H29. exact H3.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_1_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c v0 w s)
     (single_level_cache F V C R) c v0 w s F V C R).
-    exact H21. exact H32. exact H3. exact H2.
+    exact H22. exact H33. exact H3. exact H2.
     reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v0 w s).
     reflexivity. exact H3.
     intros H3. apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H3.
     rewrite -> H2 in H3.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_1_mlc_dealloc lambda0 h_tree r_val m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H25. exact H33. exact H3. exact H2. reflexivity. reflexivity.
+    exact H26. exact H34. exact H3. exact H2. reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v w s).
     reflexivity. exact H3.
-    intros H3. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H33.
-    rewrite -> H33 in H2.
-    discriminate. exact H25. exact H3.
+    intros H3. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H34.
+    rewrite -> H34 in H2.
+    discriminate. exact H26. exact H3.
   - apply (H k mu rho p lambda F V C R).
     reflexivity. exact H2.
   - apply (H k mu rho p lambda F V C R).
@@ -1621,45 +1621,45 @@ Proof.
     destruct s0.
     apply (wf7_2_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_2_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H28. exact H38. exact H3. exact H2.
+    exact H29. exact H39. exact H3. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H3.
-    intros H3. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H38.
-    rewrite -> H38 in H2.
-    discriminate. exact H28. exact H3.
+    intros H3. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H39.
+    rewrite -> H39 in H2.
+    discriminate. exact H29. exact H3.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_2_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c v0 w s)
     (single_level_cache F V C R) c v0 w s F V C R).
-    exact H21. exact H32. exact H3. exact H2.
+    exact H22. exact H33. exact H3. exact H2.
     reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v0 w s).
     reflexivity. exact H3.
     intros H3. apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H3.
     rewrite -> H2 in H3.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s H3; subst.
     destruct s.
     apply (wf7_2_mlc_dealloc lambda0 h_tree r_val m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H25. exact H33. exact H3. exact H2. reflexivity. reflexivity.
+    exact H26. exact H34. exact H3. exact H2. reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v w s).
     reflexivity. exact H3.
-    intros H3. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H33.
-    rewrite -> H33 in H2.
-    discriminate. exact H25. exact H3.
+    intros H3. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H34.
+    rewrite -> H34 in H2.
+    discriminate. exact H26. exact H3.
   - apply (H k mu rho p lambda F V C R).
     reflexivity. exact H2.
   - apply (H k mu rho p lambda F V C R).
@@ -2688,45 +2688,45 @@ Proof.
     destruct s0.
     apply (wf8_1_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_1_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H28. exact H38. exact H4. exact H2.
+    exact H29. exact H39. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
-    intros H4. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H38.
-    rewrite -> H38 in H2.
-    discriminate. exact H28. exact H4.
+    intros H4. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H39.
+    rewrite -> H39 in H2.
+    discriminate. exact H29. exact H4.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_1_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c v0 w s)
     (single_level_cache F V C R) c v0 w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v0 w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_1_mlc_dealloc lambda0 h_tree r_val m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H25. exact H33. exact H4. exact H2. reflexivity. reflexivity.
+    exact H26. exact H34. exact H4. exact H2. reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v w s).
     reflexivity. exact H4.
-    intros H4. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H33.
-    rewrite -> H33 in H2.
-    discriminate. exact H25. exact H4.
+    intros H4. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H34.
+    rewrite -> H34 in H2.
+    discriminate. exact H26. exact H4.
   - apply (H k mu rho p lambda F V C R).
     reflexivity. exact H2.
   - apply (H k mu rho p lambda F V C R).
@@ -3493,45 +3493,45 @@ Proof.
     destruct s0.
     apply (wf8_2_mlc_read lambda0 h_tree m e' mu l0 D delta obs0 k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_read_none lambda0 h_tree m e' mu l0 D delta obs0 k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_2_mlc_alloc lambda0 h_tree r_bar_val n m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H28. exact H38. exact H4. exact H2.
+    exact H29. exact H39. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m mu rho p lambda c v w s).
     reflexivity. exact H4.
-    intros H4. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H38.
-    rewrite -> H38 in H2.
-    discriminate. exact H28. exact H4.
+    intros H4. apply (wf_mlc_alloc_none lambda0 h_tree r_bar_val n m k lambda) in H39.
+    rewrite -> H39 in H2.
+    discriminate. exact H29. exact H4.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_2_mlc_write lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda (single_level_cache c v0 w s)
     (single_level_cache F V C R) c v0 w s F V C R).
-    exact H21. exact H32. exact H4. exact H2.
+    exact H22. exact H33. exact H4. exact H2.
     reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v0 w s).
     reflexivity. exact H4.
     intros H4. apply (wf_mlc_write_none lambda0 h_tree m e' m0 l0 v D obs1 mu k lambda) in H4.
     rewrite -> H2 in H4.
-    discriminate. exact H21. exact H32.
+    discriminate. exact H22. exact H33.
   - case_eq (NatMap.find lambda m). intros s0 H4; subst.
     destruct s0.
     apply (wf8_2_mlc_dealloc lambda0 h_tree r_val m k lambda (single_level_cache c v w s)
     (single_level_cache F V C R) c v w s F V C R).
-    exact H25. exact H33. exact H4. exact H2. reflexivity. reflexivity.
+    exact H26. exact H34. exact H4. exact H2. reflexivity. reflexivity.
     apply (H m m0 rho p lambda c v w s).
     reflexivity. exact H4.
-    intros H4. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H33.
-    rewrite -> H33 in H2.
-    discriminate. exact H25. exact H4.
+    intros H4. apply (wf_mlc_dealloc_none lambda0 h_tree r_val m k lambda) in H34.
+    rewrite -> H34 in H2.
+    discriminate. exact H26. exact H4.
   - apply (H k mu rho p lambda F V C R).
     reflexivity. exact H2.
   - apply (H k mu rho p lambda F V C R).
@@ -3553,7 +3553,6 @@ Definition wf9 (sigma: runtime_state): Prop :=
   (e = enclave_ID_inactive \/ (exists raw_e, e = enclave_ID_active raw_e /\ NatMap.In raw_e V))).
 
 (* WF9 MLC Read *)
-(*
 Lemma contains_enclave_prop_update : forall e' p w e,
   contains_enclave_prop e' (update p w e) -> contains_enclave_prop e' p.
 Proof.
@@ -3562,16 +3561,62 @@ Proof.
   unfold contains_enclave_prop.
   unfold contains_enclave_prop in H.
   unfold update in *. unfold recursive_update in H.
-  fold contains_enclave_prop in *.
   fold recursive_update in *.
   case_eq (equal_enclave_IDs e e0); intros.
   assert (A0 := H0); destruct (equal_enclave_IDs e e0) in H, A0.
   destruct (contains_way_ID w p1).
-  give_up.
+  fold contains_enclave_prop in *.
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0.
+  apply cmp_to_eq in H0; intros; subst.
+  destruct H. left. exact H.
+  destruct H. right; left. apply IHp1; exact H.
+  right; right. apply IHp1; exact H.
+  discriminate. discriminate.
+  destruct H. left. exact H.
+  destruct H. right; left. apply IHp1; exact H.
+  right; right. apply IHp1; exact H.
   destruct (contains_way_ID w p2).
-  give_up.
-  give_up.
+  fold contains_enclave_prop in *.
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0.
+  apply cmp_to_eq in H0; intros; subst.
+  destruct H. left. exact H.
+  destruct H. right; left. exact H.
+  right; right. exact H.
+  discriminate. discriminate.
+  destruct H. left. exact H.
+  destruct H. right; left. exact H.
+  right; right. exact H.
+  fold contains_enclave_prop in *.
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0.
+  apply cmp_to_eq in H0; intros; subst.
+  destruct H. left. exact H.
+  destruct H. right; left. exact H.
+  right; right. exact H.
+  discriminate. discriminate.
+  destruct H. left. exact H.
+  destruct H. right; left. exact H.
+  right; right. exact H.
   discriminate.
+  assert (A0 := H0); destruct (equal_enclave_IDs e e0) in H, A0.
+  destruct (contains_way_ID w p1).
+  fold contains_enclave_prop in *.
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0; discriminate.
+  discriminate.
+
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0.
+  apply cmp_to_uneq in H0.
+  fold contains_enclave_prop in *.
+  destruct H.
+
+  give_up.
+
+  destruct H. right; left. apply IHp1; exact H.
+  right; right. apply IHp1; exact H.
+  fold contains_enclave_prop in *.
+  unfold equal_enclave_IDs in H0. destruct e; destruct e0; discriminate.
+  discriminate.
+
+
   unfold contains_enclave_prop in *.
   destruct p. unfold update in H.
   unfold recursive_update in H. destruct e0.
@@ -3583,7 +3628,6 @@ Proof.
   auto.
   exact H.
 Admitted.
-*)
 
 Lemma wf9_cc_hit_read : forall psi e mem l D delta c psi' F V C R F' V' C' R',
   cc_hit_read psi (enclave_state_value e mem) l = cc_hit_read_valid D delta c psi' ->
