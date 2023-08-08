@@ -1887,6 +1887,70 @@ Proof.
   discriminate.
 Qed.
 
+Lemma cc_update_r_range2 : forall psi e' d l0 c0 psi' F V C R F' V' C' R',
+  cc_update psi e' d l0 = cc_update_valid c0 psi' ->
+  psi = single_level_cache F V C R ->
+  psi' = single_level_cache F' V' C' R' ->
+  (forall T, ((exists y, NatMap.find y R = Some T) <-> (exists y, NatMap.find y R' = Some T))).
+Proof.
+(*
+  intros.
+  subst psi psi'.
+  unfold cc_update in H.
+  case_eq (cc_unfold (single_level_cache F V C R) e' l0). intros.
+  assert (A0 := H0). destruct (cc_unfold (single_level_cache F V C R) e' l0) in A0, H.
+  assert (H1 := H0).
+  apply cc_unfold_psi in H0.
+  apply cc_unfold_c in H1.
+  injection A0; intros; subst; clear A0.
+  injection H0; intros; subst c v w s.
+  destruct c1.
+  destruct w0.
+  destruct e'.
+  case_eq (NatMap.find s R); intros.
+  assert (A0 := H2); destruct (NatMap.find s R) in H, A0.
+  injection A0; intros; subst; clear A0.
+  destruct (replace p e).
+  injection H; intros; subst.
+  split; intros.
+  {
+    destruct H3 as (y & H3).
+    case_eq (eqb s y); intros.
+    apply cmp_to_eq in H4; subst.
+    rewrite -> H2 in H3.
+    injection H3; intros; subst.
+    eexists y. eexists (update T w e).
+
+    split. apply way_ID_in_update. exact H3.
+    apply NatMapFacts.add_eq_o; reflexivity.
+    apply cmp_to_uneq in H5.
+    eexists y; eexists T. split. exact H3.
+    rewrite <- H4. apply NatMapFacts.add_neq_o; exact H5.
+  }
+  {
+    destruct H3 as (y & T & H3 & H4).
+    case_eq (eqb s y); intros.
+    apply cmp_to_eq in H5; subst.
+    assert (Some T = Some (update p w e)).
+    rewrite <- H4. apply NatMapFacts.add_eq_o; reflexivity.
+    injection H5; intros; subst.
+    eexists y; eexists p. split.
+    apply way_ID_in_update in H3. exact H3. exact H2.
+    apply cmp_to_uneq in H5.
+    eexists y; eexists T. split. exact H3.
+    rewrite <- H4. apply eq_sym. apply NatMapFacts.add_neq_o; exact H5.
+  }
+  discriminate.
+  discriminate.
+  destruct (NatMap.find s R); discriminate.
+  discriminate.
+  intros; destruct (cc_unfold (single_level_cache F V C R) e' l0).
+  discriminate.
+  discriminate.
+Qed.
+*)
+Admitted.
+
 Lemma wf8_1_mlc_read : forall lambda h_tree k e' m0 l0 D obs1 mu k' index psi psi'
   F V C R F' V' C' R',
   well_defined_cache_tree h_tree ->
@@ -3606,14 +3670,19 @@ Proof.
   unfold equal_enclave_IDs in H0. destruct e; destruct e0.
   apply cmp_to_uneq in H0.
   fold contains_enclave_prop in *.
-  destruct H.
+  destruct H. left.
 
   give_up.
 
   destruct H. right; left. apply IHp1; exact H.
   right; right. apply IHp1; exact H.
   fold contains_enclave_prop in *.
-  unfold equal_enclave_IDs in H0. destruct e; destruct e0; discriminate.
+
+
+
+  unfold equal_enclave_IDs in H0.
+
+  destruct e; destruct e0; discriminate.
   discriminate.
 
 
@@ -3627,6 +3696,7 @@ Proof.
   exact H.
   auto.
   exact H.
+*)
 Admitted.
 
 Lemma wf9_cc_hit_read : forall psi e mem l D delta c psi' F V C R F' V' C' R',
@@ -3657,24 +3727,23 @@ Proof.
   destruct H4 as (y & H4).
   case_eq (eqb s1 y); intros.
   apply cmp_to_eq in H5; subst.
-  apply (H2 e0 p). assert (Some T = Some (update p w3 e)).
+  assert (Some T = Some (update p w3 e)).
   rewrite <- H4. apply NatMapFacts.add_eq_o; reflexivity.
-  injection H5; intros; subst.
-
-
-
-
-
-  eexists y; exact H1.
+  injection H5; intros; subst; clear H5.
+  (* specialize (H2 e0 (update p w3 e) H3). *)
+  specialize (H2 e0 p).
+  apply H2.
+  give_up.
   apply cmp_to_uneq in H5.
-  apply (H2 e0 T). eexists y.
+  apply (H2 e0 T H3). eexists y.
   rewrite <- H4. apply eq_sym.
   apply NatMapFacts.add_neq_o; exact H5.
   discriminate.
   destruct (NatMap.find s1 R); discriminate.
   discriminate.
   destruct cc_unfold; discriminate.
-Qed.
+Admitted.
+
 (*
 Lemma cc_update_r_range : forall psi e' d l0 c0 psi' F V C R F' V' C' R',
   cc_update psi e' d l0 = cc_update_valid c0 psi' ->
@@ -3807,44 +3876,49 @@ Proof.
         apply (wf9_cc_hit_read (single_level_cache F V C R) e e0 l0 D obs1
         c (single_level_cache c1 v0 w0 s0) F V C R c1 v0 w0 s0).
         exact H6. reflexivity. reflexivity.
-        intros e2 T0. apply (H7 e2 T0).
-
-
-
-
-        apply (H7 w s0) in H6. apply H3.
-        apply H3 in H6. apply H3. exact H6.
-        apply (H7 w s0). apply H3. exact H6.
+        intros e2 T0. apply (H7 e2 T0). exact H4.
       }
       {
-        intros. apply cmp_to_uneq in H4.
-        assert (NatMap.find index (NatMap.add a (single_level_cache c1 v0 w1 s1) k) = NatMap.find index k).
-        apply NatMapFacts.add_neq_o. exact H4.
-        rewrite -> H2 in H9.
-        rewrite -> H1 in H9.
-        injection H9; intros; subst F' V' C' R'.
-        exact (H7 w s0).
+        intros. apply cmp_to_uneq in H3.
+        assert (NatMap.find index (NatMap.add a (single_level_cache c1
+        v0 w0 s0) k) = NatMap.find index k).
+        apply NatMapFacts.add_neq_o. exact H3.
+        rewrite -> H2 in H10.
+        rewrite -> H1 in H10.
+        injection H10; intros; subst F' V' C' R'.
+        apply (H7 e T H4 H9).
       }
     }
-    reflexivity.
-    reflexivity.
     discriminate.
-    intros; destruct (cc_hit_read s1 e' l0).
+    intros; destruct (cc_hit_read s0 e' l0).
     discriminate.
     case_eq (recursive_mlc_read k e' m0 l0 l). intros.
-    assert (A1 := H8). destruct (recursive_mlc_read k e' m0 l0 l) in A1, H0.
-    case_eq (cc_update s1 e' d1 l0). intros.
-    assert (A2 := H9). destruct (cc_update s1 e' d1 l0) in A2, H0.
+    assert (A1 := H10). destruct (recursive_mlc_read k e' m0 l0 l) in A1, H0.
+    case_eq (cc_update s0 e' d1 l0). intros.
+    assert (A2 := H11). destruct (cc_update s0 e' d1 l0) in A2, H0.
     injection H0; injection A0; injection A1; injection A2; intros; subst; clear A0 A1 A2.
     {
       case_eq (eqb index a).
       {
         intros. apply cmp_to_eq in H3. subst a.
-        destruct s.
-        destruct s2.
-        assert (forall c, CacheletMap.In c w0 <-> CacheletMap.In c w1); intros.
-        apply (cc_update_c (single_level_cache c0 v w0 s) e' D l0 c (single_level_cache c1 v0 w1 s1)
-        c0 v w0 s c1 v0 w1 s1 c2 H9). reflexivity. reflexivity.
+        destruct s. destruct s1. assert (v = v0).
+        apply (cc_update_v (single_level_cache c0 v w s) e' D l0 c (single_level_cache c1 v0 w0 s0)
+        c0 v w s c1 v0 w0 s0 H11). reflexivity. reflexivity. subst v0.
+        rewrite -> H1 in H5. injection H5; intros; subst c0 v w s.
+        assert (Some (single_level_cache F' V' C' R') = Some (single_level_cache c1 V w0 s0)).
+        rewrite <- H2. apply NatMapFacts.add_eq_o; reflexivity.
+        injection H3; intros; subst c1 V' w0 s0.
+        apply (H7 e T). exact H8.
+
+
+        assert ((exists y, NatMap.find y R = Some T) <-> (exists y, NatMap.find y R' = Some T)).
+        apply (cc_update_r_range (single_level_cache F V C R) e' D l0 c (single_level_cache F' V C' R')
+        F V C R F' V C' R' H11). reflexivity. reflexivity.
+
+
+        assert (forall e, (e = enclave_ID_inactive \/ (exists raw_e, e = enclave_ID_active raw_e /\
+        NatMap.In raw_e V)) <-> (e = enclave_ID_inactive \/ (exists raw_e, e = enclave_ID_active raw_e
+        /\ NatMap.In raw_e V'))); intros.
         assert (forall x, ((exists y T, way_ID_in x T /\ NatMap.find y s = Some T) <->
         (exists y T, way_ID_in x T /\ NatMap.find y s1 = Some T))).
         apply (cc_update_r_range (single_level_cache c0 v w0 s) e' D l0 c (single_level_cache c1 v0 w1 s1)

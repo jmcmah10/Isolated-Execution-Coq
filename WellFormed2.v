@@ -2626,8 +2626,7 @@ Proof.
     apply NatMapFacts.add_neq_o; apply not_eq_sym; exact H4.
     exact H3. reflexivity. exact H5. discriminate.
     destruct (NatMap.find b mu); discriminate.
-  - give_up.
-(*
+  - (*
     case_eq (eqb p1 p2); intros.
     apply cmp_to_eq in H4. subst.
     assert (Some (process_value (enclave_state_value state E) (address b_pc delta_pc) q) =
@@ -2642,17 +2641,14 @@ Proof.
     apply enclave_creation_id in H41. subst.
     apply enclave_creation_add in H43. subst e3.
     case_eq (NatMap.find e e1); intros. destruct e0.
-    split. destruct H20 as (i' & H20).
-    unfold memory_read in H20.
-    assert (A0 := H5); destruct (NatMap.find b0 mu) in A0, H20.
-    injection A0; intros; subst; clear A0.
-    eexists i'; exact H20. discriminate.
+
     case_eq (eqb n e); intros.
     apply cmp_to_eq in H8; subst.
     assert (Some (enclave_address_and_data l_data k_num) =
     Some (enclave_address_and_data r_val2_addr r_val3)).
     rewrite <- H3. apply NatMapFacts.add_eq_o; reflexivity.
     injection H8; intros; subst r_val2_addr r_val3; clear H8.
+
     assert ((exists i, NatMap.find d d1 = Some (memory_value_instruction i)) /\
     (forall n b_data delta_data D_data, n < n0 ->
     add_to_memory_address mu m0 n = Some (address b_data delta_data) ->
@@ -2660,62 +2656,77 @@ Proof.
     exists n_k : data, NatMap.find (elt:=memory_value) delta_data D_data = Some (memory_value_data n_k))).
     apply (H m mu rho p p2 e2 e1 q0 e m0 n0 (address b d) b d d1).
     reflexivity. exact H18. exact H7. reflexivity. exact H6.
-    destruct H8. apply (H12 k_num b_data delta_data D_data).                                    
-    apply (H m mu rho p p2 e2 e1 q0 e l_data k_num (address b d) b d D_pc).
 
-
-    apply (H m mu rho p p2 e2 e1 q0 e l_data k_num (address b d) b d D_pc).
-    reflexivity. exact H18.
-
-    intros. apply (H9 k_num b_data delta_data D_data).
-    apply H9.
-    case_eq (eqb n e); intros.
-    apply cmp_to_eq in H10; subst.
-    apply (H9 k_num b_data delta_data D_data).
-
-rewrite <- H3.
-    assert (n <> e).
-    unfold enclave_creation in H43. destruct r_val2_addr.
-    destruct (NatMap.find b1 mu). destruct is_all_zeroes.
-    unfold add_new_enclave_to_enclave_state in H43.
-    case_eq (NatMap.find n e1); intros.
-    destruct (NatMap.find n e1); discriminate.
-    intros contra. subst.
-    discriminate. injection A0; intros; subst; clear A0.
-
-
-
-
-
-    reflexivity. exact H6.
     split. destruct H20 as (i' & H20).
     unfold memory_read in H20.
     assert (A0 := H5); destruct (NatMap.find b0 mu) in A0, H20.
     injection A0; intros; subst; clear A0.
     eexists i'; exact H20. discriminate.
-    destruct H7. exact H8. discriminate.
-    destruct (NatMap.find b mu); discriminate.
+
+    give_up.
+
+    apply cmp_to_uneq in H8.
+    assert (NatMap.find e e1 = Some (enclave_address_and_data l_data k_num)).
+    rewrite <- H3. apply eq_sym. apply NatMapFacts.add_neq_o; exact H8.
+    rewrite -> H7 in H9. injection H9; intros; subst.
+
+    unfold memory_read in H20.
+    case_eq (NatMap.find b0 mu); intros.
+    assert (H11 := H10). destruct (NatMap.find b0 mu) in H10, H20.
+    injection H10; intros; subst; clear H10.
+
+    give_up.
+    discriminate.
+    destruct (NatMap.find b0 mu); discriminate.
+
+    case_eq (eqb n e); intros.
+    apply cmp_to_eq in H8; subst.
+    assert (Some (enclave_address_and_data l_data k_num) =
+    Some (enclave_address_and_data r_val2_addr r_val3)).
+    rewrite <- H3. apply NatMapFacts.add_eq_o; reflexivity.
+    injection H8; intros; subst r_val2_addr r_val3; clear H8.
+
+    assert ((exists i, NatMap.find d d1 = Some (memory_value_instruction i)) /\
+    (forall n b_data delta_data D_data, n < k_num ->
+    add_to_memory_address mu (address b d) n = Some (address b_data delta_data) ->
+    NatMap.find (elt:=data_block) b_data mu = Some D_data ->
+    exists n_k : data, NatMap.find (elt:=memory_value) delta_data D_data = Some (memory_value_data n_k))).
+    apply (H m mu rho p p2 e2 e1 q0 e (address b d) k_num (address b d) b d d1).
+    reflexivity. exact H18. exact H7. reflexivity. exact H6.
+    *)
+    give_up.
+  - give_up.
+  - case_eq (eqb p1 p2); intros.
+    apply cmp_to_eq in H4; subst.
+    assert (Some (process_value (enclave_state_value state E) (address b_pc delta_pc) q) =
+    Some (process_value (enclave_state_value e2 e3) (address b0 d0) q0)).
+    rewrite <- H2. apply NatMapFacts.add_eq_o; reflexivity.
+    injection H4; intros; subst; clear H4.
+    split. destruct H20 as (i' & H20).
+    eexists i'. unfold memory_read in H20.
+    destruct (NatMap.find b0 mu).
+    injection H5; intros; subst.
+    exact H20. discriminate.
+    give_up.
     apply cmp_to_uneq in H4.
-    unfold memory_read in H12.
-    case_eq (NatMap.find b mu); intros.
-    assert (A0 := H6); destruct (NatMap.find b mu) in A0, H12.
-    injection A0; intros; subst; clear A0.
-    apply (H m mu rho p p1 state E q e l_data k_num (address b_pc delta_pc) b_pc delta_pc D_pc).
-    reflexivity. rewrite <- H2. apply eq_sym.
+    assert (NatMap.find p1 p = Some (process_value (enclave_state_value state E)
+    (address b_pc delta_pc) q)).
+    rewrite <- H2. apply eq_sym.
     apply NatMapFacts.add_neq_o; apply not_eq_sym; exact H4.
-    exact H3. reflexivity. exact H5. discriminate.
-    destruct (NatMap.find b mu); discriminate.
+    assert ((exists i, NatMap.find delta_pc D_pc = Some (memory_value_instruction i)) /\
+    (forall n b_data delta_data D_data, n < k_num ->
+    add_to_memory_address m0 l_data n = Some (address b_data delta_data) ->
+    NatMap.find b_data m0 = Some D_data ->
+    exists n_k : data, NatMap.find delta_data D_data = Some (memory_value_data n_k))).
+    apply (H m m0 rho p p1 state E q e l_data k_num (address b_pc
+    delta_pc) b_pc delta_pc D_pc).
+    reflexivity. exact H6. exact H3. reflexivity.
+    split. destruct H20 as (i' & H20).
+    eexists i'. unfold memory_read in H20.
+    destruct (NatMap.find b0 mu).
     
-Lemma mlc_read_data_block :
-  mlc_read m (enclave_state_value e1 e2) mu l1 lambda h_tree =
-  mlc_read_valid D delta obs0 k -> NatMap.find b mu = Some D.
 
 
-    apply (H m mu rho p p2 state E (address b0 delta0) q0 e l k_num b0 delta0 D0).
-    reflexivity.
-*)
-  - give_up.
-  - give_up.
   - unfold active_enclave_update in H36.
     destruct (NatMap.find r_val e1); intros.
     injection H36; intros; subst.

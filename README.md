@@ -48,16 +48,64 @@ This section also contains a definition of "disjoint enclave states", which clai
 # WellFormed.v
 The first part contains "helper lemmas", which is a list of lemmas used in later proofs.
 
-The second part contains definition and preservation proof of the first three conditions of well-formedness. This includes F ⊆ dom(C) (defined as well-formed 1), ran(V(e)) ⊆ dom(C) for any e ∈ dom(V) (defined as well-formed 2).
+The second part contains definition and preservation proofs of the first two conditions of well-formedness. This includes F ⊆ dom(C) (defined as well-formed 1), ran(V(e)) ⊆ dom(C) for any e ∈ dom(V) (defined as well-formed 2).
 
-Well-formed 1 and well-formed 2 preservation are closely linked. This is due to the [CREATE] and [DESTROY] semantics.
+Well-formed 1 and well-formed 2 preservation are closely linked due to the defintion of the [CREATE] and [DESTROY] semantics.
+The [CREATE] semantic removes a cachelet index from F and adds it to V, and the [DESTROY] semantic removes a cachelet index from V and adds it to F.
+Because of this, both well-formed 1 and well-formed 2 are required as initial conditions in well-formed 1 preservation and well-formed 2 preservation.
+The two other semantics with non-trivial proofs are [LOAD] and [STORE].
+
+To prove preservation over the semantics, the "inversion" tactic is used, first on the multi-level semantics, indicated by "===>", and then on the single level semantics, indicated by "-->>".
+Within each of these cases, an inductive proof is used to show preservation through the MLC functions, and within each MLC function, an inductive proof is used to show preservation through the single-level cachelet function.
 
 # WellFormedEnclaveState.v
+Includes lemmas related to the enclave creation and enclave elimination functions.
+Also includes a definition for the property "active enclave contained", which states that given any enclave state <e, E>, e ∈ dom(E).
+There is also a preservation proof for this property.
 
 # WellFormed2.v
-F ∩ ran(V (e)) = ∅ for any e ∈ dom(V) (defined as well-formed 3).
+Contains definitions and preservation proofs of four well-formedness conditions. This includes F ∩ ran(V(e)) = ∅ for any e ∈ dom(V) (defined as well-formed 3), e = ⊥ or e ∈ dom(E) for any p such that π(p) = ⟨ε; l⟩, and ε = ⟨e; E⟩ (defined as well-formed 4), there exists ⟨F′;V ′;C′; R′⟩ ∈ ran(κ) such that e ∈ dom(V ′) for any p such that π(p) = ⟨ε; l⟩, and ε = ⟨e; E⟩ (defined as well-formed 5), and μ(l0) = ι for some ι and μ(l) = n1, . . . , μ(l + k − 1) = nk for some n1, . . . , nk for any p such that π(p) = ⟨ε; l0⟩, and ε = ⟨e; E⟩ and ⟨l; k⟩ ∈ ran(E) (defined as well-formed 6).
+
+For well-formed 3, there are three extra conditions that need to be explicitly defined:
+- F must have no duplicates
+- forall e, ran(V(e)) has no duplicates
+- forall e e' such that e != e', ran(V(e)) and ran(V(e')) are disjoint
+This causes the proofs to have a few more conditions than well-formed 1 and well-formed 2, but the overall structure and reasoning of the proof is about the same.
+
+In well-formed 4 and well-formed 5, both the multi-level cache and processes are involved. Because all of the single-process semantics effect the processes, all of the proofs require some level of analysis. The logic for [LOAD], and [STORE] are the same as well-formed 1 and well-formed 2. On the other hand, [CREATE] and [DESTROY] require similar logic for the multi-level cache, but also involves some extra cases for created and destroyed enclaves (hence the addition of wf4_enclave_creation, etc). [ENTER] and [EXIT] require only analyzing the enclave state in the process, as both semantics only modify the active enclave. The [ENTER] semantic in particular is where the "active enclave contained" property must be used.
+
+Well-formed 6 is currently incomplete (and so far very difficult to prove O_O) 
 
 # WellFormed3.v
+Contains definitions and preservation proofs of three well-formedness conditions. The seventh and eighth conditions are broken into two parts, as they are "if and only if"s in the paper, their definitions have different quantifiers in each direction. Because of this, each well-formed condition is split into two.
+These conditions are: forall w s, (w, s) ∈ C -> s ∈ R (defined as well-formed 7-1), forall s, s ∈ R -> exists w, (w, s) ∈ C (defined as well-formed 7-2), forall w s, (w, s) ∈ C -> exists y T, w ≺ T and T ∈ ran(R) (defined as well-formed 8-1), and forall w, exists y T s.t. w ≺ T and T ∈ ran(R) -> exists s, (w, s) ∈ C.
+All the well-formed 7 and well-formed 8 conditions are related to the multi-level cache, so much like well-formed 1, 2, and 3, the only semantics with non-trival proofs are [CREATE], [DESTROY], [LOAD], and [STORE].
 
-# Note on induction in coq
+The last well-formedness condition is e ⊏ T and T ∈ ran(R) -> e ∈ dom(V ) ∪ {⊥}, defined as well-formed 9. (still working on this one as well).
+
+# Note on induction in Coq
 In coq, variables can be more or less general in induction proofs depending on which variables are defined in "intros".
+
+Here is a simple example of this in action:
+
+******************************************************
+Theorem add_assoc_intros : forall n m p : nat,
+  n + (m + p) = (n + m) + p.
+Proof.
+  intros n m p. induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. reflexivity.
+Qed.
+
+Theorem add_assoc_no_intros : forall n m p : nat,
+  n + (m + p) = (n + m) + p.
+Proof.
+  intros n. induction n as [| n' IHn'].
+  - reflexivity.
+  - intros. simpl. rewrite (IHn' m p). reflexivity.
+Qed.
+******************************************************
+
+In the first proof, all variables are introduced at the beginning, so when the "rewrite" tactic is used, no more variables need to be defined.
+In the second proof, only the variable "n" is defined, so when the "rewrite" tactic is used, the other variables in the proposition must be defined.
+This is used extensively in the Coq proofs, as some proofs cannot be completed without generalizing some variables.
